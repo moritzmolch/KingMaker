@@ -13,7 +13,11 @@ EXECUTALBE_THREADS=${11}
 # setup with analysis clone if needed
 set -e
 source $ANALYSIS_PATH/CROWN/init.sh $ANALYSIS
-
+# remove conda /cvmfs/etp.kit.edu from $PATH so cmakes uses the LCG stack python and not the conda one
+PATH=$(echo $PATH | sed 's%/cvmfs/etp.kit.edu/[^:]*:%%g')
+CONDA_PYTHON_EXE=""
+CONDA_EXE=""
+CONDA_PREFIX=""
 # use a fourth of the machine for compiling
 THREADS_AVAILABLE=$(grep -c ^processor /proc/cpuinfo)
 THREADS=$(( THREADS_AVAILABLE / 4 ))
