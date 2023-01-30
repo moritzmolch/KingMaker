@@ -376,9 +376,12 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             # Make new tarball
             prevdir = os.getcwd()
             os.system("cd $ANALYSIS_PATH")
+            # get absolute path to tarball dir
+            tarball_dir = os.path.abspath("tarballs/{}".format(self.production_tag))
             tarball_local = law.LocalFileTarget(
-                "tarballs/{}/{}/processor.tar.gz".format(self.production_tag, task_name)
+                "{}/{}/processor.tar.gz".format(tarball_dir, task_name)
             )
+            print(tarball_local.path)
             tarball_local.parent.touch()
             # Create tarball containing:
             #   The processor directory, thhe relevant config files, law
@@ -390,8 +393,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                 "--exclude",
                 "*.git",
                 "-czf",
-                "tarballs/{}/{}/processor.tar.gz".format(
-                    self.production_tag, task_name
+                "{}/{}/processor.tar.gz".format(
+                   tarball_dir, task_name
                 ),
                 "processor",
                 "lawluigi_configs/{}_luigi.cfg".format(analysis_name),
@@ -410,8 +413,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                 console.log("tar returned non-zero exit status {}".format(code))
                 console.rule()
                 os.remove(
-                    "tarballs/{}/{}/processor.tar.gz".format(
-                        self.production_tag, task_name
+                    "/{}/processor.tar.gz".format(
+                        tarball_dir, task_name
                     )
                 )
                 raise Exception("tar failed")
@@ -420,8 +423,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             # Copy new tarball to remote
             tarball.parent.touch()
             tarball.copy_from_local(
-                src="tarballs/{}/{}/processor.tar.gz".format(
-                    self.production_tag, task_name
+                src="{}/{}/processor.tar.gz".format(tarball_dir, task_name
                 )
             )
             console.rule("Tarball uploaded!")
