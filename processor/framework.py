@@ -38,7 +38,6 @@ else:
 
 
 class Task(law.Task):
-
     local_user = getuser()
     wlcg_path = luigi.Parameter(description="Base-path to remote file location.")
     # Behaviour of production_tag:
@@ -393,9 +392,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                 "--exclude",
                 "*.git",
                 "-czf",
-                "{}/{}/processor.tar.gz".format(
-                   tarball_dir, task_name
-                ),
+                "{}/{}/processor.tar.gz".format(tarball_dir, task_name),
                 "processor",
                 "lawluigi_configs/{}_luigi.cfg".format(analysis_name),
                 "lawluigi_configs/{}_law.cfg".format(analysis_name),
@@ -412,19 +409,14 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                 console.log("Output: {}".format(out))
                 console.log("tar returned non-zero exit status {}".format(code))
                 console.rule()
-                os.remove(
-                    "/{}/processor.tar.gz".format(
-                        tarball_dir, task_name
-                    )
-                )
+                os.remove("/{}/processor.tar.gz".format(tarball_dir, task_name))
                 raise Exception("tar failed")
             else:
                 console.rule("Successful tar!")
             # Copy new tarball to remote
             tarball.parent.touch()
             tarball.copy_from_local(
-                src="{}/{}/processor.tar.gz".format(tarball_dir, task_name
-                )
+                src="{}/{}/processor.tar.gz".format(tarball_dir, task_name)
             )
             console.rule("Tarball uploaded!")
             os.chdir(prevdir)
@@ -477,6 +469,7 @@ class PuppetMaster(Task):
     fulltask = luigi.BoolParameter(
         default=False, description="Whether the full puppet task should be displayed."
     )
+
     # Requirements are the same as puppet task
     def requires(self):
         return self.puppet_task.requires()

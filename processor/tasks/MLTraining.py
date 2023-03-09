@@ -20,6 +20,7 @@ except OSError:
     current_width = 140
 console = Console(width=current_width)
 
+
 # Task to create root shards for the NN training
 # One shard is created for each process (like "ff" and "NMSSM_240_125_60")
 # Shards are NOT shared between eras and decay channels
