@@ -36,16 +36,16 @@ action(){
     if [[ "{{USE_CVMFS}}" == "True" ]]; then
         # Activate environment from cvmfs
         source ${ENV_PATH} {{ENV_NAME}}
-        echo "xrdcp {{TARBALL_PATH}} ${SPAWNPOINT}"
-        xrdcp {{TARBALL_PATH}} ${SPAWNPOINT}
+        echo "gfal-copy {{TARBALL_PATH}} ${SPAWNPOINT}"
+        gfal-copy {{TARBALL_PATH}} ${SPAWNPOINT}
     else
         # Copy tarballs 
         (
             source /cvmfs/etp.kit.edu/LAW_envs/conda_envs/miniconda/bin/activate KingMaker
-            echo "xrdcp {{TARBALL_PATH}} ${SPAWNPOINT}"
-            xrdcp {{TARBALL_PATH}} ${SPAWNPOINT}
-            echo "xrdcp {{TARBALL_ENV_PATH}} ${SPAWNPOINT}"
-            xrdcp {{TARBALL_ENV_PATH}} ${SPAWNPOINT}
+            echo "gfal-copy {{TARBALL_PATH}} ${SPAWNPOINT}"
+            gfal-copy {{TARBALL_PATH}} ${SPAWNPOINT}
+            echo "gfal-copy {{TARBALL_ENV_PATH}} ${SPAWNPOINT}"
+            gfal-copy {{TARBALL_ENV_PATH}} ${SPAWNPOINT}
         )
         mkdir -p ${ENV_PATH}
         tar -xzf {{ENV_NAME}}.tar.gz -C ${ENV_PATH} && rm {{ENV_NAME}}.tar.gz
