@@ -1,10 +1,12 @@
 import luigi
+import law
 import os
 import subprocess
 from law.util import interruptable_popen
 from framework import Task
 from framework import console
-from QuantitiesMap import QuantitiesMap
+from CROWNRun import CROWNRun
+import json
 
 
 def convert_to_comma_seperated(list):
@@ -14,6 +16,104 @@ def convert_to_comma_seperated(list):
         return list[0]
     else:
         return ",".join(list)
+
+
+def ensure_dir(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+class QuantitiesMap(law.LocalWorkflow, Task):
+    scopes = luigi.ListParameter()
+    all_sampletypes = luigi.ListParameter()
+    all_eras = luigi.ListParameter()
+    era = luigi.Parameter()
+    sampletype = luigi.Parameter()
+    production_tag = luigi.Parameter()
+    analysis = luigi.Parameter()
+    config = luigi.Parameter()
+    nick = luigi.Parameter()
+
+    def workflow_requires(self):
+        requirements = {}
+        requirements["ntuples"] = CROWNRun(
+            nick=self.nick,
+            analysis=self.analysis,
+            config=self.config,
+            production_tag=self.production_tag,
+            all_eras=self.all_eras,
+            all_sampletypes=self.all_sampletypes,
+            era=self.era,
+            sampletype=self.sampletype,
+            scopes=self.scopes,
+        )
+        return requirements
+
+    def requires(self):
+        requirements = {}
+        requirements["ntuples"] = CROWNRun(
+            nick=self.nick,
+            analysis=self.analysis,
+            config=self.config,
+            production_tag=self.production_tag,
+            all_eras=self.all_eras,
+            all_sampletypes=self.all_sampletypes,
+            era=self.era,
+            sampletype=self.sampletype,
+            scopes=self.scopes,
+        )
+        return requirements
+
+    def create_branch_map(self):
+        return {
+            0: {
+                "era": self.era,
+                "sampletype": self.sampletype,
+            }
+        }
+
+    def output(self):
+        target = self.remote_target(
+            "{}/{}_{}_quantities_map.json".format(
+                self.production_tag, self.era, self.sampletype
+            )
+        )
+        target.parent.touch()
+        return target
+
+    def run(self):
+        output = self.output()
+        era = self.era
+        sampletype = self.sampletype
+        _workdir = os.path.abspath("workdir")
+        ensure_dir(_workdir)
+        quantities_map = {}
+        quantities_map[era] = {}
+        quantities_map[era][sampletype] = {}
+        # go through all input files and get all quantities maps
+        inputs = self.input()["ntuples"]
+        for sample in inputs:
+            if isinstance(
+                self.input()["ntuples"][sample], law.NestedSiblingFileCollection
+            ):
+                inputfiles = self.input()["ntuples"][sample]._flat_target_list
+                for inputfile in inputfiles:
+                    if inputfile.path.endswith("quantities_map.json"):
+                        with inputfile.localize("r") as _file:
+                            # open file and update quantities map
+                            update = json.load(open(_file.path, "r"))
+                            scope = list(update[era][sampletype].keys())[0]
+                            quantities_map[era][sampletype][scope] = update[era][
+                                sampletype
+                            ][scope]
+        # write the quantities map to a file
+        local_filename = os.path.join(
+            _workdir, "{}_{}_quantities_map.json".format(era, sampletype)
+        )
+        with open(local_filename, "w") as f:
+            json.dump(quantities_map, f, indent=4)
+        output.copy_from_local(local_filename)
 
 
 class CROWNBuildFriend(Task):
@@ -33,6 +133,7 @@ class CROWNBuildFriend(Task):
     analysis = luigi.Parameter()
     friend_config = luigi.Parameter()
     friend_name = luigi.Parameter()
+    nick = luigi.Parameter()
     config = luigi.Parameter()
     htcondor_request_cpus = luigi.IntParameter(default=1)
     production_tag = luigi.Parameter()
@@ -55,8 +156,17 @@ class CROWNBuildFriend(Task):
     def run(self):
         # get output file path
         output = self.output()
+        quantity_target = []
         # get quantities map
-        with self.input()["quantities_map"].localize("r") as _file:
+        for target in self.input()["quantities_map"]["collection"]._iter_flat():
+            quantity_target = target
+        if len(quantity_target) != 1:
+            raise Exception(
+                "There should be only one quantities map file, but found {} \n Full map: {}".format(
+                    len(quantity_target), quantity_target
+                )
+            )
+        with quantity_target[0].localize("r") as _file:
             _quantities_map_file = _file.path
         # convert list to comma separated strings
         _sampletype = self.sampletype
@@ -66,7 +176,9 @@ class CROWNBuildFriend(Task):
         _analysis = str(self.analysis)
         _friend_config = str(self.friend_config)
         # also use the tag for the local tarball creation
-        _tag = "{}/CROWN_{}_{}".format(self.production_tag, _analysis, _friend_config)
+        _tag = "{}/CROWN_{}_{}_{}_{}".format(
+            self.production_tag, _analysis, _friend_config, _sampletype, _era
+        )
         _install_dir = os.path.join(str(self.install_dir), _tag)
         _build_dir = os.path.join(str(self.build_dir), _tag)
         _crown_path = os.path.abspath("CROWN")
@@ -117,7 +229,7 @@ class CROWNBuildFriend(Task):
             console.log("Friend Config: {}".format(_friend_config))
             console.log("Sampletype: {}".format(_sampletype))
             console.log("Era: {}".format(_era))
-            console.log("Channels: {}".format(_scopes))
+            console.log("Scopes: {}".format(_scopes))
             console.log("Shifts: {}".format(_shifts))
             console.log("Quantities map: {}".format(_quantities_map_file))
             console.rule("")

@@ -37,8 +37,24 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
     def htcondor_job_config(self, config, job_num, branches):
         config = super().htcondor_job_config(config, job_num, branches)
         config.custom_content.append(
-            ("JobBatchName", f"{self.nick}-{self.analysis}-{self.config}-{self.production_tag}")
+            (
+                "JobBatchName",
+                f"{self.nick}-{self.analysis}-{self.config}-{self.production_tag}",
+            )
         )
+        for type in ["Log", "Output", "Error"]:
+            logfilepath = ""
+            for param in config.custom_content:
+                if param[0] == type:
+                    logfilepath = param[1]
+                    break
+            # split the filename, and add the sample nick as an additional folder
+            logfolder = logfilepath.split("/")[:-1]
+            logfile = logfilepath.split("/")[-1]
+            logfolder.append(self.nick)
+            # create the new path
+            os.makedirs("/".join(logfolder), exist_ok=True)
+            config.custom_content.append((type, "/".join(logfolder) + "/" + logfile))
         return config
 
     def modify_polling_status_line(self, status_line):
@@ -96,18 +112,16 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
             )
             for scope in self.scopes
         ]
-        # print(self.branch_data)
-        # nicks = [f"{self.branch}.root"]
         # quantities_map json for each scope only needs to be created once per sample
-        # if self.branch == 0:
-        #     nicks += [
-        #         "{era}/{nick}/{scope}/{era}_{nick}_{scope}_quantities_map.json".format(
-        #             era=self.branch_data["era"],
-        #             nick=self.branch_data["nick"],
-        #             scope=scope,
-        #         )
-        #         for scope in self.scopes
-        #     ]
+        if self.branch == 0:
+            nicks += [
+                "{era}/{nick}/{scope}/{era}_{nick}_{scope}_quantities_map.json".format(
+                    era=self.branch_data["era"],
+                    nick=self.branch_data["nick"],
+                    scope=scope,
+                )
+                for scope in self.scopes
+            ]
         targets = self.remote_targets(nicks)
         for target in targets:
             target.parent.touch()
@@ -143,16 +157,16 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
             _tarballpath = _file.path
         # first unpack the tarball if the exec is not there yet
         _tempfile = os.path.join(
-                _workdir,
-                "unpacking_{}_{}_{}".format(
-                    self.config, branch_data["sampletype"], branch_data["era"]
-                ),
-            )
+            _workdir,
+            "unpacking_{}_{}_{}".format(
+                self.config, branch_data["sampletype"], branch_data["era"]
+            ),
+        )
         while os.path.exists(_tempfile):
             time.sleep(1)
         if not os.path.exists(_abs_executable) and not os.path.exists(_tempfile):
             # create a temp file to signal that we are unpacking
-            open(_tempfile,"a").close()
+            open(_tempfile, "a").close()
             tar = tarfile.open(_tarballpath, "r:gz")
             tar.extractall(_workdir)
             os.remove(_tempfile)

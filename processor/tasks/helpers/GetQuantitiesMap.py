@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Readout Quantities Map")
     parser.add_argument("--input", help="input file")
@@ -31,7 +32,6 @@ def read_quantities_map(input_file, era, sampletype, scope, outputfile):
     output[era][sampletype][scope] = data
     with open(outputfile, "w") as f:
         json.dump(output, f, indent=4)
-
 
 
 # call the function with the input file

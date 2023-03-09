@@ -6,6 +6,7 @@ from framework import console
 from law.task.base import WrapperTask
 from rich.table import Table
 
+
 class ProduceFriends(WrapperTask):
     """
     collective task to trigger friend production for a list of samples,
@@ -19,7 +20,8 @@ class ProduceFriends(WrapperTask):
     config = luigi.Parameter()
     dataset_database = luigi.Parameter()
     production_tag = luigi.Parameter()
-    scopes = luigi.ListParameter()
+    shifts = luigi.Parameter()
+    scopes = luigi.Parameter()
 
     def requires(self):
         # load the list of samples to be processed
@@ -47,6 +49,12 @@ class ProduceFriends(WrapperTask):
         table.add_column("Era", justify="left")
         table.add_column("Sampletype", justify="left")
 
+        # sanitize the scopes information
+        if isinstance(self.scopes, str):
+            self.scopes = self.scopes.split(",")
+        elif isinstance(self.scopes, list):
+            self.scopes = self.scopes
+
         for i, nick in enumerate(samples):
             data["details"][nick] = {}
             # check if sample exists in datasets.yaml
@@ -64,7 +72,9 @@ class ProduceFriends(WrapperTask):
             # used to built the CROWN executable
             data["eras"].add(data["details"][nick]["era"])
             data["sampletypes"].add(data["details"][nick]["sampletype"])
-            table.add_row(nick, data['details'][nick]['era'] ,data['details'][nick]['sampletype'])
+            table.add_row(
+                nick, data["details"][nick]["era"], data["details"][nick]["sampletype"]
+            )
         console.log(table)
 
         console.log(
@@ -73,7 +83,6 @@ class ProduceFriends(WrapperTask):
         console.rule("")
         requirements = {}
         for samplenick in data["details"]:
-            print(f"CROWNFriends_{samplenick}")
             requirements[f"CROWNFriends_{samplenick}"] = CROWNFriends(
                 nick=samplenick,
                 analysis=self.analysis,
