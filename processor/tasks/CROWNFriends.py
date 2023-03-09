@@ -117,7 +117,7 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
                     "era": self.era,
                     "sampletype": self.sampletype,
                     "inputfile": os.path.expandvars(self.wlcg_path) + inputfile.path,
-                    "filecounter": counter / len(self.scopes),
+                    "filecounter": int(counter / len(self.scopes)),
                 }
                 counter += 1
         return branch_map
