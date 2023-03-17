@@ -16,7 +16,8 @@ class ProduceSamples(WrapperTask):
     config = luigi.Parameter()
     dataset_database = luigi.Parameter()
     production_tag = luigi.Parameter()
-    scopes = luigi.ListParameter()
+    shifts = luigi.Parameter()
+    scopes = luigi.Parameter()
 
     def requires(self):
         # load the list of samples to be processed
@@ -25,6 +26,27 @@ class ProduceSamples(WrapperTask):
         data["eras"] = set()
         data["details"] = {}
         samples = []
+
+        # sanitize the scopes information
+        try:
+            self.scopes = ast.literal_eval(self.scopes)
+        except:
+            self.scopes = self.scopes
+        if isinstance(self.scopes, str):
+            self.scopes = self.scopes.split(",")
+        elif isinstance(self.scopes, list):
+            self.scopes = self.scopes
+
+        # sanitize the shifts information
+        try:
+            self.shifts = ast.literal_eval(self.shifts)
+        except:
+            self.shifts = self.shifts
+        if isinstance(self.shifts, str):
+            self.shifts = self.shifts.split(",")
+        elif isinstance(self.shifts, list):
+            self.shifts = self.shifts
+
         # check if sample list is a file or a comma separated list
         if self.sample_list.endswith(".txt"):
             with open(self.sample_list) as file:

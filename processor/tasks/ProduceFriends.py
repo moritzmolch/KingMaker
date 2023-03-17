@@ -60,6 +60,16 @@ class ProduceFriends(WrapperTask):
         elif isinstance(self.scopes, list):
             self.scopes = self.scopes
 
+        # sanitize the shifts information
+        try:
+            self.shifts = ast.literal_eval(self.shifts)
+        except:
+            self.shifts = self.shifts
+        if isinstance(self.shifts, str):
+            self.shifts = self.shifts.split(",")
+        elif isinstance(self.shifts, list):
+            self.shifts = self.shifts
+
         for i, nick in enumerate(samples):
             data["details"][nick] = {}
             # check if sample exists in datasets.yaml
