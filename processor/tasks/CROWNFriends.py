@@ -41,7 +41,6 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
     production_tag = luigi.Parameter()
     files_per_task = luigi.IntParameter()
 
-
     def htcondor_output_directory(self):
         # Add identification-str to prevent interference between different tasks of the same class
         # Expand path to account for use of env variables (like $USER)
