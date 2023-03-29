@@ -65,10 +65,8 @@ class ProduceFriends(WrapperTask):
             self.shifts = ast.literal_eval(self.shifts)
         except:
             self.shifts = self.shifts
-        if isinstance(self.shifts, str):
-            self.shifts = self.shifts.split(",")
-        elif isinstance(self.shifts, list):
-            self.shifts = self.shifts
+        if isinstance(self.shifts, list):
+            self.shifts = self.shifts.join(",")
 
         for i, nick in enumerate(samples):
             data["details"][nick] = {}
@@ -104,6 +102,7 @@ class ProduceFriends(WrapperTask):
                 config=self.config,
                 production_tag=self.production_tag,
                 all_eras=data["eras"],
+                shifts=self.shifts,
                 all_sampletypes=data["sampletypes"],
                 scopes=self.scopes,
                 era=data["details"][samplenick]["era"],

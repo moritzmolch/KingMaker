@@ -41,6 +41,17 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
     production_tag = luigi.Parameter()
     files_per_task = luigi.IntParameter()
 
+
+    def htcondor_output_directory(self):
+        # Add identification-str to prevent interference between different tasks of the same class
+        # Expand path to account for use of env variables (like $USER)
+        return law.wlcg.WLCGDirectoryTarget(
+            self.remote_path(f"htcondor_files/{self.nick}_{self.friend_name}"),
+            law.wlcg.WLCGFileSystem(
+                None, base="{}".format(os.path.expandvars(self.wlcg_path))
+            ),
+        )
+
     def htcondor_job_config(self, config, job_num, branches):
         config = super().htcondor_job_config(config, job_num, branches)
         config.custom_content.append(
@@ -87,6 +98,7 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
             config=self.config,
             production_tag=self.production_tag,
             all_eras=self.all_eras,
+            shifts=self.shifts,
             all_sampletypes=self.all_sampletypes,
             era=self.era,
             sampletype=self.sampletype,

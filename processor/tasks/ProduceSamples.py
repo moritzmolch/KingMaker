@@ -37,15 +37,13 @@ class ProduceSamples(WrapperTask):
         elif isinstance(self.scopes, list):
             self.scopes = self.scopes
 
-        # sanitize the shifts information
+        # sanitize the shifts information, here, a comma separated string is used
         try:
             self.shifts = ast.literal_eval(self.shifts)
         except:
             self.shifts = self.shifts
-        if isinstance(self.shifts, str):
-            self.shifts = self.shifts.split(",")
-        elif isinstance(self.shifts, list):
-            self.shifts = self.shifts
+        if isinstance(self.shifts, list):
+            self.shifts = self.shifts.join(",")
 
         # check if sample list is a file or a comma separated list
         if self.sample_list.endswith(".txt"):
@@ -59,6 +57,8 @@ class ProduceSamples(WrapperTask):
         console.log(f"Production tag: {self.production_tag}")
         console.log(f"Analysis: {self.analysis}")
         console.log(f"Config: {self.config}")
+        console.log(f"Shifts: {self.shifts}")
+        console.log(f"Scopes: {self.scopes}")
         console.rule("")
         table = Table(title=f"Samples (selected Scopes: {self.scopes})")
 
@@ -98,6 +98,8 @@ class ProduceSamples(WrapperTask):
                 nick=samplenick,
                 analysis=self.analysis,
                 config=self.config,
+                scopes=self.scopes,
+                shifts=self.shifts,
                 production_tag=self.production_tag,
                 all_eras=data["eras"],
                 all_sampletypes=data["sampletypes"],
