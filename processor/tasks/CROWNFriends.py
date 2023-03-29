@@ -11,6 +11,7 @@ import time
 import copy
 from framework import console
 from framework import HTCondorWorkflow
+from law.config import Config
 
 law.contrib.load("wlcg")
 
@@ -50,6 +51,23 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
                 None, base="{}".format(os.path.expandvars(self.wlcg_path))
             ),
         )
+
+    def htcondor_create_job_file_factory(self):
+        task_name = self.__class__.__name__
+        task_name = "_".join([task_name, self.nick, self.friend_name])
+        _cfg = Config.instance()
+        job_file_dir = _cfg.get_expanded("job", "job_file_dir")
+        job_files = os.path.join(
+            job_file_dir,
+            self.production_tag,
+            task_name,
+            "files",
+        )
+        factory = super(HTCondorWorkflow, self).htcondor_create_job_file_factory(
+            dir=job_files,
+            mkdtemp=False,
+        )
+        return factory
 
     def htcondor_job_config(self, config, job_num, branches):
         config = super().htcondor_job_config(config, job_num, branches)
