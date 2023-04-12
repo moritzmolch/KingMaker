@@ -37,7 +37,7 @@ cmake $CROWNFOLDER \
 
 cd $BUILDDIR
 echo "Finished preparing the compilation and starting to compile"
-make install -j $THREADS
+make install -j $THREADS 2>&1 |tee $BUILDDIR/build.log
 echo "Finished the compilation and starting to make the *.tar.gz archive"
 cd $INSTALLDIR
 touch $TARBALLNAME
