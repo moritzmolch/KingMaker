@@ -20,21 +20,22 @@ CONDA_EXE=""
 CONDA_PREFIX=""
 # use a fourth of the machine for compiling
 THREADS_AVAILABLE=$(grep -c ^processor /proc/cpuinfo)
-THREADS=$(( THREADS_AVAILABLE / 4 ))
+# THREADS=$(( THREADS_AVAILABLE / 4 ))
+THREADS=2
 echo "Using $THREADS threads for the compilation"
 which cmake
 
 cmake $CROWNFOLDER \
-	 -DANALYSIS=$ANALYSIS \
-	 -DCONFIG=$CONFIG \
-	 -DSAMPLES=$SAMPLES \
-	 -DERAS=$ERAS \
-	 -DSCOPES=$SCOPE \
-	 -DSHIFTS=$SHIFTS \
-	 -DINSTALLDIR=$INSTALLDIR \
-	 -DFRIENDS=true \
-	 -DQUANTITIESMAP=$QUANTITIESMAP \
-	 -B$BUILDDIR 2>&1 |tee $BUILDDIR/cmake.log
+	-DANALYSIS=$ANALYSIS \
+	-DCONFIG=$CONFIG \
+	-DSAMPLES=$SAMPLES \
+	-DERAS=$ERAS \
+	-DSCOPES=$SCOPE \
+	-DSHIFTS=$SHIFTS \
+	-DINSTALLDIR=$INSTALLDIR \
+	-DFRIENDS=true \
+	-DQUANTITIESMAP=$QUANTITIESMAP \
+	-B$BUILDDIR 2>&1 | tee $BUILDDIR/cmake.log
 
 cd $BUILDDIR
 echo "Finished preparing the compilation and starting to compile"
