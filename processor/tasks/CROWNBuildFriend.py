@@ -149,8 +149,8 @@ class CROWNBuildFriend(Task):
 
     def output(self):
         target = self.remote_target(
-            "crown_friends_{}_{}_{}_{}.tar.gz".format(
-                self.analysis, self.friend_config, self.sampletype, self.era
+            "crown_friends_{}_{}_{}_{}_{}.tar.gz".format(
+                self.analysis, self.friend_config, self.friend_name, self.sampletype, self.era
             )
         )
         return target
@@ -177,9 +177,10 @@ class CROWNBuildFriend(Task):
         _scopes = convert_to_comma_seperated(self.scopes)
         _analysis = str(self.analysis)
         _friend_config = str(self.friend_config)
+        _friend_name = str(self.friend_name)
         # also use the tag for the local tarball creation
-        _tag = "{}/CROWN_{}_{}_{}_{}".format(
-            self.production_tag, _analysis, _friend_config, _sampletype, _era
+        _tag = "{}/CROWNFriends_{}_{}_{}_{}_{}".format(
+            self.production_tag, _analysis, _friend_config, _friend_name, _sampletype, _era
         )
         _install_dir = os.path.join(str(self.install_dir), _tag)
         _build_dir = os.path.join(str(self.build_dir), _tag)
@@ -229,6 +230,7 @@ class CROWNBuildFriend(Task):
             console.log("Settings used: ")
             console.log("Analysis: {}".format(_analysis))
             console.log("Friend Config: {}".format(_friend_config))
+            console.log("Friend Name: {}".format(_friend_name))
             console.log("Sampletype: {}".format(_sampletype))
             console.log("Era: {}".format(_era))
             console.log("Scopes: {}".format(_scopes))
