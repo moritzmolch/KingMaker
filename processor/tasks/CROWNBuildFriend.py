@@ -26,14 +26,14 @@ def ensure_dir(file_path):
 
 class QuantitiesMap(law.LocalWorkflow, Task):
     scopes = luigi.ListParameter()
-    all_sampletypes = luigi.ListParameter()
-    all_eras = luigi.ListParameter()
+    all_sampletypes = luigi.ListParameter(significant=False)
+    all_eras = luigi.ListParameter(significant=False)
     era = luigi.Parameter()
     sampletype = luigi.Parameter()
     production_tag = luigi.Parameter()
-    analysis = luigi.Parameter()
-    config = luigi.Parameter()
-    nick = luigi.Parameter()
+    analysis = luigi.Parameter(significant=False)
+    config = luigi.Parameter(significant=False)
+    nick = luigi.Parameter(significant=False)
 
     def workflow_requires(self):
         requirements = {}
@@ -125,8 +125,8 @@ class CROWNBuildFriend(Task):
 
     # configuration variables
     scopes = luigi.ListParameter()
-    all_sampletypes = luigi.ListParameter()
-    all_eras = luigi.ListParameter()
+    all_sampletypes = luigi.ListParameter(significant=False)
+    all_eras = luigi.ListParameter(significant=False)
     shifts = luigi.Parameter()
     build_dir = luigi.Parameter()
     install_dir = luigi.Parameter()
@@ -135,8 +135,8 @@ class CROWNBuildFriend(Task):
     analysis = luigi.Parameter()
     friend_config = luigi.Parameter()
     friend_name = luigi.Parameter()
-    nick = luigi.Parameter()
-    config = luigi.Parameter()
+    nick = luigi.Parameter(significant=False)
+    config = luigi.Parameter(significant=False)
     htcondor_request_cpus = luigi.IntParameter(default=1)
     production_tag = luigi.Parameter()
 

@@ -21,7 +21,6 @@ class ConfigureDatasets(Task):
 
     nick = luigi.Parameter()
     dataset_database = luigi.Parameter()
-    production_tag = luigi.Parameter()
     env_script = os.path.join(
         os.path.dirname(__file__), "../../", "setup", "dasclient.sh"
     )

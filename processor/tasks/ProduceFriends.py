@@ -19,7 +19,7 @@ class ProduceFriends(WrapperTask):
     friend_config = luigi.Parameter()
     friend_name = luigi.Parameter()
     config = luigi.Parameter()
-    dataset_database = luigi.Parameter()
+    dataset_database = luigi.Parameter(significant=False)
     production_tag = luigi.Parameter()
     shifts = luigi.Parameter()
     scopes = luigi.Parameter()

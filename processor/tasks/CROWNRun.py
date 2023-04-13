@@ -25,8 +25,8 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
     output_collection_cls = law.NestedSiblingFileCollection
 
     scopes = luigi.ListParameter()
-    all_sampletypes = luigi.ListParameter()
-    all_eras = luigi.ListParameter()
+    all_sampletypes = luigi.ListParameter(significant=False)
+    all_eras = luigi.ListParameter(significant=False)
     nick = luigi.Parameter()
     sampletype = luigi.Parameter()
     era = luigi.Parameter()
@@ -97,9 +97,7 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
     def workflow_requires(self):
         requirements = {}
         requirements["dataset"] = {}
-        requirements["dataset"] = ConfigureDatasets.req(
-            self, nick=self.nick, production_tag=self.production_tag
-        )
+        requirements["dataset"] = ConfigureDatasets.req(self, nick=self.nick)
         requirements["tarball"] = CROWNBuild.req(self)
         return requirements
 
@@ -109,7 +107,7 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
     def create_branch_map(self):
         branch_map = {}
         branchcounter = 0
-        dataset = ConfigureDatasets(nick=self.nick, production_tag=self.production_tag)
+        dataset = ConfigureDatasets(nick=self.nick)
         # since we use the filelist from the dataset, we need to run it first
         dataset.run()
         datsetinfo = dataset.output()

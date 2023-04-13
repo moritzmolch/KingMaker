@@ -14,7 +14,7 @@ class ProduceSamples(WrapperTask):
     sample_list = luigi.Parameter()
     analysis = luigi.Parameter()
     config = luigi.Parameter()
-    dataset_database = luigi.Parameter()
+    dataset_database = luigi.Parameter(significant=False)
     production_tag = luigi.Parameter()
     shifts = luigi.Parameter()
     scopes = luigi.Parameter()

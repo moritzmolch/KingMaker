@@ -5,7 +5,6 @@ import os
 from CROWNBuildFriend import CROWNBuildFriend
 from CROWNRun import CROWNRun
 import tarfile
-from ConfigureDatasets import ConfigureDatasets
 import subprocess
 import time
 import copy
@@ -28,13 +27,13 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
 
     output_collection_cls = law.NestedSiblingFileCollection
 
-    all_sampletypes = luigi.ListParameter()
-    all_eras = luigi.ListParameter()
+    all_sampletypes = luigi.ListParameter(significant=False)
+    all_eras = luigi.ListParameter(significant=False)
     scopes = luigi.ListParameter()
     shifts = luigi.Parameter()
     analysis = luigi.Parameter()
     friend_config = luigi.Parameter()
-    config = luigi.Parameter()
+    config = luigi.Parameter(significant=False)
     friend_name = luigi.Parameter()
     nick = luigi.Parameter()
     sampletype = luigi.Parameter()
@@ -103,12 +102,6 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
 
     def workflow_requires(self):
         requirements = {}
-        # requirements["dataset"] = {}
-        # for i, nick in enumerate(self.details):
-        #     requirements["dataset"][i] = ConfigureDatasets.req(
-        #         self, nick=nick, production_tag=self.production_tag
-        #     )
-        # requirements["ntuples"] = CROWNRun.req(self)
         requirements["ntuples"] = CROWNRun(
             nick=self.nick,
             analysis=self.analysis,
@@ -191,7 +184,7 @@ class CROWNFriends(HTCondorWorkflow, law.LocalWorkflow):
         # first unpack the tarball if the exec is not there yet
         tempfile = os.path.join(
             _workdir,
-            "unpacking_{}_{}_{}".format(self.config, sampletype, era),
+            "unpacking_{}_{}_{}".format(self.friend_config, sampletype, era),
         )
         while os.path.exists(tempfile):
             time.sleep(1)
