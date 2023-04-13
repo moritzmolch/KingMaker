@@ -97,7 +97,9 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
     def workflow_requires(self):
         requirements = {}
         requirements["dataset"] = {}
-        requirements["dataset"] = ConfigureDatasets.req(self, nick=self.nick)
+        requirements["dataset"] = ConfigureDatasets.req(
+            self, nick=self.nick, production_tag=self.production_tag
+        )
         requirements["tarball"] = CROWNBuild.req(self)
         return requirements
 
@@ -107,7 +109,7 @@ class CROWNRun(HTCondorWorkflow, law.LocalWorkflow):
     def create_branch_map(self):
         branch_map = {}
         branchcounter = 0
-        dataset = ConfigureDatasets(nick=self.nick)
+        dataset = ConfigureDatasets(nick=self.nick, production_tag=self.production_tag)
         # since we use the filelist from the dataset, we need to run it first
         dataset.run()
         datsetinfo = dataset.output()
