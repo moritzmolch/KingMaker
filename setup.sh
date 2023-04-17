@@ -176,6 +176,28 @@ action() {
         git submodule update --init --recursive -- law
     fi
 
+    # add voms proxy path
+    export X509_USER_PROXY=$(voms-proxy-info -path)
+    # first check if the user already has a luigid scheduler running
+    # start a luidigd scheduler if there is one already running
+    if [ -z "$(pgrep -u ${USER} -f luigid)" ]; then
+        echo "Starting Luigi scheduler... using a random port"
+        while
+            export LUIGIPORT=$(shuf -n 1 -i 49152-65535)
+            netstat -atun | grep -q "$LUIGIPORT"
+        do
+            continue
+        done
+        luigid --background --logdir logs --state-path luigid_state.pickle --port=$LUIGIPORT
+        echo "Luigi scheduler started on port $LUIGIPORT, setting LUIGIPORT to $LUIGIPORT"
+    else
+        # first get the (first) PID
+        export LUIGIPID=$(pgrep -u ${USER} -f luigid | head -n 1)
+        # now get the luigid port that the scheduler is using and set the LUIGIPORT variable
+        export LUIGIPORT=$(cat /proc/${LUIGIPID}/cmdline | sed -e "s/\x00/ /g" | cut -d "=" -f2)
+        echo "Luigi scheduler already running on port ${LUIGIPORT}, setting LUIGIPORT to ${LUIGIPORT}"
+    fi
+
     echo "Setting up Luigi/Law ..."
     export LAW_HOME="${BASE_DIR}/.law/${ANA_NAME}"
     export LAW_CONFIG_FILE="${BASE_DIR}/lawluigi_configs/${ANA_NAME}_law.cfg"
@@ -191,28 +213,6 @@ action() {
     # tasks
     _addpy "${BASE_DIR}/processor"
     _addpy "${BASE_DIR}/processor/tasks"
-
-    # add voms proxy path
-    export X509_USER_PROXY=$(voms-proxy-info -path)
-    # first check if the user already has a luigid scheduler running
-    # start a luidigd scheduler if there is one already running
-    if [ -z "$(pgrep -u ${USER} -f luigid)" ]; then
-        echo "Starting Luigi scheduler... using a random port"
-        while
-            LUIGIPORT=$(shuf -n 1 -i 49152-65535)
-            netstat -atun | grep -q "$LUIGIPORT"
-        do
-            continue
-        done
-        luigid --background --logdir logs --state-path luigid_state.pickle --port=$LUIGIPORT
-        echo "Luigi scheduler started on port $LUIGIPORT, setting LUIGIPORT to $LUIGIPORT"
-    else
-        # first get the (first) PID
-        LUIGIPID=$(pgrep -u ${USER} -f luigid | head -n 1)
-        # now get the luigid port that the scheduler is using and set the LUIGIPORT variable
-        LUIGIPORT=$(cat /proc/${LUIGIPID}/cmdline | sed -e "s/\x00/ /g" | cut -d "=" -f2)
-        echo "Luigi scheduler already running on port ${LUIGIPORT}, setting LUIGIPORT to ${LUIGIPORT}"
-    fi
 
     # Create law index for analysis if not previously done
     if [[ ! -f "${LAW_HOME}/index" ]]; then

@@ -65,6 +65,8 @@ class ProduceFriends(WrapperTask):
             self.shifts = ast.literal_eval(self.shifts)
         except:
             self.shifts = self.shifts
+        if self.shifts is None:
+            self.shifts = "None"
         if isinstance(self.shifts, list):
             self.shifts = self.shifts.join(",")
 
@@ -92,6 +94,9 @@ class ProduceFriends(WrapperTask):
 
         console.log(
             f"Producing friends for {len(data['details'])} samples in {len(data['eras'])} eras and {len(self.scopes)} scopes: {self.scopes}"
+        )
+        console.log(
+            f"Selected Shifts are {self.shifts} (self.shifts is of type {type(self.shifts)})"
         )
         console.rule("")
         requirements = {}
