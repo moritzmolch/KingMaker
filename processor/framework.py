@@ -380,7 +380,9 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             tarball_local = law.LocalFileTarget(
                 "{}/{}/processor.tar.gz".format(tarball_dir, task_name)
             )
-            print(tarball_local.path)
+            print(
+                f"Uploading framework tarball from {tarball_local.path} to {tarball.path}"
+            )
             tarball_local.parent.touch()
             # Create tarball containing:
             #   The processor directory, thhe relevant config files, law
@@ -412,13 +414,13 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                 os.remove("/{}/processor.tar.gz".format(tarball_dir, task_name))
                 raise Exception("tar failed")
             else:
-                console.rule("Successful tar!")
+                console.rule("Successful tar of framework tarball !")
             # Copy new tarball to remote
             tarball.parent.touch()
             tarball.copy_from_local(
                 src="{}/{}/processor.tar.gz".format(tarball_dir, task_name)
             )
-            console.rule("Tarball uploaded!")
+            console.rule("Framework tarball uploaded!")
             os.chdir(prevdir)
         # Check if env of this task was found in cvmfs
         env_list = os.getenv("ENV_NAMES_LIST").split(";")

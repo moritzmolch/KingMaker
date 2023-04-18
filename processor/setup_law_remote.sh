@@ -13,6 +13,7 @@ action(){
 
     # Set USER as local USER
     export USER={{USER}}
+    export LUIGIPORT={{LUIGIPORT}}
     echo "------------------------------------------"
     echo " | USER = ${USER}"
     echo " | HOSTNAME = $(hostname)"
