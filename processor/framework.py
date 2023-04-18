@@ -442,6 +442,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         config.render_variables["ENV_NAME"] = self.ENV_NAME
         config.render_variables["TAG"] = self.production_tag
         config.render_variables["USE_CVMFS"] = env_dict[self.ENV_NAME]
+        config.render_variables["LUIGIPORT"] = os.getenv("LUIGIPORT")
         config.render_variables["TARBALL_PATH"] = (
             os.path.expandvars(self.wlcg_path) + tarball.path
         )
