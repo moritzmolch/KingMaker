@@ -147,9 +147,9 @@ action() {
     case ${ANA_NAME} in
         KingMaker)
             echo "Setting up CROWN ..."
-            # Due to frequent updates CROWN is not set up as a submodule
+             # Dueto frequent updates CROWN is not set up as a submodule
             if [ ! -d CROWN ]; then
-                git clone --recursive git@github.com:KIT-CMS/CROWN
+                git clone --recursive --depth 1 --shallow-submodules git@github.com:KIT-CMS/CROWN
             fi
             if [ -z "$(ls -A sample_database)" ]; then
                 git submodule update --init --recursive -- sample_database
