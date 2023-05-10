@@ -11,7 +11,7 @@ action() {
     fi
 
     # Check if current machine is an etp portal machine.
-    PORTAL_LIST=("bms1.etp.kit.edu" "bms2.etp.kit.edu" "bms3.etp.kit.edu" "portal1.etp.kit.edu" "bms1-centos7" "bms2-centos7")
+    PORTAL_LIST=("bms1.etp.kit.edu" "bms2.etp.kit.edu" "bms3.etp.kit.edu" "portal1.etp.kit.edu" "bms1-centos7" "bms2-centos7" "bms3-centos7" "portal1-centos7")
     CURRENT_HOST=$(hostname --long)
     if [[ ! " ${PORTAL_LIST[*]} " =~ " ${CURRENT_HOST} " ]]; then  
         echo "Current host (${CURRENT_HOST}) not in list of allowed machines:"
