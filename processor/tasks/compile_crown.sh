@@ -11,6 +11,7 @@ BUILDDIR=$9
 TARBALLNAME=${10}
 EXECUTALBE_THREADS=${11}
 # setup with analysis clone if needed
+set -o pipefail
 set -e
 source $ANALYSIS_PATH/CROWN/init.sh $ANALYSIS
 # remove conda /cvmfs/etp.kit.edu from $PATH so cmakes uses the LCG stack python and not the conda one
@@ -24,7 +25,7 @@ THREADS=$(( THREADS_AVAILABLE / 4 ))
 echo "Using $THREADS threads for the compilation"
 which cmake
 
-cmake $CROWNFOLDER \
+if cmake $CROWNFOLDER \
 	 -DANALYSIS=$ANALYSIS \
 	 -DCONFIG=$CONFIG \
 	 -DSAMPLES=$SAMPLES \
@@ -33,8 +34,15 @@ cmake $CROWNFOLDER \
 	 -DSHIFTS=$SHIFTS \
 	 -DTHREADS=$EXECUTALBE_THREADS \
 	 -DINSTALLDIR=$INSTALLDIR \
-	 -B$BUILDDIR 2>&1 |tee $BUILDDIR/cmake.log
-
+	 -B$BUILDDIR 2>&1 |tee $BUILDDIR/cmake.log; then
+echo "CMake finished successfully"
+else
+	echo "-------------------------------------------------------------------------"
+	echo "CMake failed, check the log file $BUILDDIR/cmake.log for more information"
+	echo "-------------------------------------------------------------------------"
+	sleep 0.1 # wait for the log file to be written
+	exit 1
+fi
 cd $BUILDDIR
 echo "Finished preparing the compilation and starting to compile"
 make install -j $THREADS 2>&1 |tee $BUILDDIR/build.log

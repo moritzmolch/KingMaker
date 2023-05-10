@@ -25,7 +25,7 @@ THREADS=2
 echo "Using $THREADS threads for the compilation"
 which cmake
 
-cmake $CROWNFOLDER \
+if cmake $CROWNFOLDER \
 	-DANALYSIS=$ANALYSIS \
 	-DCONFIG=$CONFIG \
 	-DSAMPLES=$SAMPLES \
@@ -35,7 +35,15 @@ cmake $CROWNFOLDER \
 	-DINSTALLDIR=$INSTALLDIR \
 	-DFRIENDS=true \
 	-DQUANTITIESMAP=$QUANTITIESMAP \
-	-B$BUILDDIR 2>&1 | tee $BUILDDIR/cmake.log
+	-B$BUILDDIR 2>&1 | tee $BUILDDIR/cmake.log; then
+	echo "CMake finished successfully"
+else
+	echo "-------------------------------------------------------------------------"
+	echo "CMake failed, check the log file $BUILDDIR/cmake.log for more information"
+	echo "-------------------------------------------------------------------------"
+	sleep 0.1 # wait for the log file to be written
+	exit 1
+fi
 
 cd $BUILDDIR
 echo "Finished preparing the compilation and starting to compile"

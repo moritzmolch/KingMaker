@@ -236,9 +236,10 @@ class Task(law.Task):
 
                     if p.poll() != None:
                         break
+                if p.returncode != 0:
+                    raise Exception(f"Error when running {command}.")
             except Exception as e:
-                console.log("Error: {}".format(e))
-                raise Exception("{} failed".format(list(command)))
+                raise Exception(f"Error when running {command}.")
         else:
             raise Exception("No command provided.")
 
