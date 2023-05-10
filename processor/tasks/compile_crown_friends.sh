@@ -11,6 +11,7 @@ BUILDDIR=$9
 TARBALLNAME=${10}
 QUANTITIESMAP=${11}
 # setup with analysis clone if needed
+set -o pipefail
 set -e
 source $ANALYSIS_PATH/CROWN/init.sh $ANALYSIS
 # remove conda /cvmfs/etp.kit.edu from $PATH so cmakes uses the LCG stack python and not the conda one
