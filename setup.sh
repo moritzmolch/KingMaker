@@ -220,5 +220,7 @@ action() {
     fi
 
     export LAW_IS_SET_UP="True"
+    # set an alias for the sample manager
+    alias sample_manager="python3 sample_database/manager.py"
 }
 action "$@"
