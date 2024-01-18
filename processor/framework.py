@@ -289,23 +289,41 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
     def get_submission_os(self):
         # function to check, if running on centos7, centos8 or rhel9
         # based on this, the correct docker image is chosen, overwriting the htcondor_docker_image parameter
-        distro = (
-            subprocess.check_output("lsb_release -i | cut -f2", shell=True)
-            .decode()
-            .strip()
-        )
-        os_version = (
-            subprocess.check_output("lsb_release -r | cut -f2", shell=True)
-            .decode()
-            .strip()
-        )
+        # check if lsb_release is installed, if not, use the information from /etc/os-release
+        try:
+            distro = (
+                subprocess.check_output("lsb_release -i | cut -f2", shell=True)
+                .decode()
+                .strip()
+            )
+            os_version = (
+                subprocess.check_output("lsb_release -r | cut -f2", shell=True)
+                .decode()
+                .strip()
+            )
+        except subprocess.CalledProcessError:
+            distro = (
+                subprocess.check_output(
+                    "cat /etc/os-release | grep '^NAME=' | cut -f2 -d=''", shell=True
+                )
+                .decode()
+                .strip()
+            )
+            os_version = (
+                subprocess.check_output(
+                    "cat /etc/os-release | grep '^VERSION_ID=' | cut -f2 -d=''",
+                    shell=True,
+                )
+                .decode()
+                .strip()
+            )
 
         image_name = None
 
         if distro == "CentOS":
             if os_version[0] == "7":
                 image_name = "centos7"
-        elif distro == "RedHatEnterprise":
+        elif distro == "RedHatEnterprise" or distro == "AlmaLinux":
             if os_version[0] == "8":
                 image_name = "centos8"
             elif os_version[0] == "9":
@@ -319,8 +337,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             raise Exception(
                 f"Unknown OS {distro} {os_version}, CROWN will not run without changes"
             )
-        image = f"ghcr.io/kit-cms/kingmaker-images-{image_name}:{str(self.ENV_NAME).lower()}"
-        print(f"Running on {distro} {os_version}, using image {image}")
+        image = f"ghcr.io/kit-cms/kingmaker-images-{image_name}-{str(self.ENV_NAME).lower()}:main"
+        # print(f"Running on {distro} {os_version}, using image {image}")
         return image
 
     def htcondor_create_job_manager(self, **kwargs):
