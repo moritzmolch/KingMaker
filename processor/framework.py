@@ -270,7 +270,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         description="Universe to be set in HTCondor job submission."
     )
     htcondor_docker_image = luigi.Parameter(
-        description="Docker image to be used in HTCondor job submission."
+        description="Docker image to be used in HTCondor job submission.",
+        default="Automatic",
     )
     htcondor_request_disk = luigi.Parameter(
         description="Amount of scratch-space(kB) to be requested in HTCondor job submission."
@@ -395,8 +396,10 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             config.custom_content.append(("Requirements", self.htcondor_requirements))
         config.custom_content.append(("+RemoteJob", self.htcondor_remote_job))
         config.custom_content.append(("universe", self.htcondor_universe))
-        config.custom_content.append(("docker_image", self.get_submission_os()))
-
+        if self.htcondor_docker_image != "Automatic":
+            config.custom_content.append(("docker_image", self.htcondor_docker_image))
+        else:
+            config.custom_content.append(("docker_image", self.get_submission_os()))
         config.custom_content.append(("+RequestWalltime", self.htcondor_walltime))
         config.custom_content.append(("x509userproxy", self.htcondor_user_proxy))
         config.custom_content.append(("request_cpus", self.htcondor_request_cpus))
