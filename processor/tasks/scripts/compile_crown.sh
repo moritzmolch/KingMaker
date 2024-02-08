@@ -34,6 +34,7 @@ if cmake $CROWNFOLDER \
 	 -DSHIFTS=$SHIFTS \
 	 -DTHREADS=$EXECUTALBE_THREADS \
 	 -DINSTALLDIR=$INSTALLDIR \
+	 -DPRODUCTION=True \
 	 -B$BUILDDIR 2>&1 |tee $BUILDDIR/cmake.log; then
 echo "CMake finished successfully"
 else

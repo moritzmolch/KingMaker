@@ -12,6 +12,7 @@ from tempfile import mkdtemp
 from getpass import getuser
 from law.target.collection import flatten_collections
 from law.config import Config
+import subprocess
 
 law.contrib.load("wlcg")
 law.contrib.load("htcondor")
@@ -269,7 +270,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         description="Universe to be set in HTCondor job submission."
     )
     htcondor_docker_image = luigi.Parameter(
-        description="Docker image to be used in HTCondor job submission."
+        description="Docker image to be used in HTCondor job submission.",
+        default="Automatic",
     )
     htcondor_request_disk = luigi.Parameter(
         description="Amount of scratch-space(kB) to be requested in HTCondor job submission."
@@ -284,6 +286,61 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
 
     # Use proxy file located in $X509_USER_PROXY or /tmp/x509up_u$(id) if empty
     htcondor_user_proxy = law.wlcg.get_vomsproxy_file()
+
+    def get_submission_os(self):
+        # function to check, if running on centos7, centos8 or rhel9
+        # based on this, the correct docker image is chosen, overwriting the htcondor_docker_image parameter
+        # check if lsb_release is installed, if not, use the information from /etc/os-release
+        try:
+            distro = (
+                subprocess.check_output("lsb_release -i | cut -f2", shell=True)
+                .decode()
+                .strip()
+            )
+            os_version = (
+                subprocess.check_output("lsb_release -r | cut -f2", shell=True)
+                .decode()
+                .strip()
+            )
+        except subprocess.CalledProcessError:
+            distro = (
+                subprocess.check_output(
+                    "cat /etc/os-release | grep '^NAME=' | cut -f2 -d=''", shell=True
+                )
+                .decode()
+                .strip()
+            )
+            os_version = (
+                subprocess.check_output(
+                    "cat /etc/os-release | grep '^VERSION_ID=' | cut -f2 -d=''",
+                    shell=True,
+                )
+                .decode()
+                .strip()
+            )
+
+        image_name = None
+
+        if distro == "CentOS":
+            if os_version[0] == "7":
+                image_name = "centos7"
+        elif distro == "RedHatEnterprise" or distro == "AlmaLinux":
+            if os_version[0] == "8":
+                image_name = "centos8"
+            elif os_version[0] == "9":
+                image_name = "rhel9"
+        elif distro == "Ubuntu":
+            if os_version[0:2] == "20":
+                image_name = "ubuntu2004"
+            elif os_version[0:2] == "22":
+                image_name = "ubuntu2204"
+        else:
+            raise Exception(
+                f"Unknown OS {distro} {os_version}, CROWN will not run without changes"
+            )
+        image = f"ghcr.io/kit-cms/kingmaker-images-{image_name}-{str(self.ENV_NAME).lower()}:main"
+        # print(f"Running on {distro} {os_version}, using image {image}")
+        return image
 
     def htcondor_create_job_manager(self, **kwargs):
         kwargs = merge_dicts(self.htcondor_job_manager_defaults, kwargs)
@@ -339,7 +396,10 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             config.custom_content.append(("Requirements", self.htcondor_requirements))
         config.custom_content.append(("+RemoteJob", self.htcondor_remote_job))
         config.custom_content.append(("universe", self.htcondor_universe))
-        config.custom_content.append(("docker_image", self.htcondor_docker_image))
+        if self.htcondor_docker_image != "Automatic":
+            config.custom_content.append(("docker_image", self.htcondor_docker_image))
+        else:
+            config.custom_content.append(("docker_image", self.get_submission_os()))
         config.custom_content.append(("+RequestWalltime", self.htcondor_walltime))
         config.custom_content.append(("x509userproxy", self.htcondor_user_proxy))
         config.custom_content.append(("request_cpus", self.htcondor_request_cpus))

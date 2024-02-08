@@ -131,6 +131,13 @@ class CROWNRun(CROWNExecuteBase):
             tar = tarfile.open(_tarballpath, "r:gz")
             tar.extractall(_workdir)
             os.remove(_tempfile)
+        # test running the source command
+        console.rule("Testing Source command for CROWN")
+        self.run_command(
+            command=["source", "{}/init.sh".format(_workdir)],
+            silent=False,
+        )
+        console.rule("Finished testing Source command for CROWN")
         # set environment using env script
         my_env = self.set_environment("{}/init.sh".format(_workdir))
         _crown_args = [_outputfile] + _inputfiles
@@ -143,8 +150,10 @@ class CROWNRun(CROWNExecuteBase):
         console.log("inputfile {}".format(_inputfiles))
         console.log("outputfile {}".format(_outputfile))
         console.log("workdir {}".format(_workdir))  # run CROWN
+        command = [_executable] + _crown_args
+        console.log(f"Running command: {command}")
         with subprocess.Popen(
-            [_executable] + _crown_args,
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             bufsize=1,
