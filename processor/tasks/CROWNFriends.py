@@ -36,9 +36,9 @@ class CROWNFriends(CROWNExecuteBase):
             production_tag=self.production_tag,
             all_eras=self.all_eras,
             shifts=self.shifts,
-            all_sampletypes=self.all_sampletypes,
+            all_sample_types=self.all_sample_types,
             era=self.era,
-            sampletype=self.sampletype,
+            sample_type=self.sample_type,
             scopes=self.scopes,
         )
         requirements["friend_tarball"] = CROWNBuildFriend.req(self)
@@ -68,7 +68,7 @@ class CROWNFriends(CROWNExecuteBase):
                     "scope": scope,
                     "nick": self.nick,
                     "era": self.era,
-                    "sampletype": self.sampletype,
+                    "sample_type": self.sample_type,
                     "inputfile": os.path.expandvars(self.wlcg_path) + inputfile.path,
                     "filecounter": int(counter / len(self.scopes)),
                 }
@@ -116,7 +116,7 @@ class CROWNFriends(CROWNExecuteBase):
         branch_data = self.branch_data
         scope = branch_data["scope"]
         era = branch_data["era"]
-        sampletype = branch_data["sampletype"]
+        sample_type = branch_data["sample_type"]
         quantities_map_outputs = [
             x for x in outputs if x.path.endswith("quantities_map.json")
         ]
@@ -130,7 +130,7 @@ class CROWNFriends(CROWNExecuteBase):
         # set the outputfilename to the first name in the output list, removing the scope suffix
         _outputfile = str(output.basename.replace("_{}.root".format(scope), ".root"))
         _abs_executable = "{}/{}_{}_{}".format(
-            _workdir, self.friend_config, sampletype, era
+            _workdir, self.friend_config, sample_type, era
         )
         console.log(
             "Getting CROWN friend_tarball from {}".format(
@@ -142,7 +142,7 @@ class CROWNFriends(CROWNExecuteBase):
         # first unpack the tarball if the exec is not there yet
         tempfile = os.path.join(
             _workdir,
-            "unpacking_{}_{}_{}".format(self.friend_config, sampletype, era),
+            "unpacking_{}_{}_{}".format(self.friend_config, sample_type, era),
         )
         while os.path.exists(tempfile):
             time.sleep(1)
@@ -158,7 +158,9 @@ class CROWNFriends(CROWNExecuteBase):
         # set environment using env script
         my_env = self.set_environment("{}/init.sh".format(_workdir))
         _crown_args = [_outputfile] + [_inputfile]
-        _executable = "./{}_{}_{}_{}".format(self.friend_config, sampletype, era, scope)
+        _executable = "./{}_{}_{}_{}".format(
+            self.friend_config, sample_type, era, scope
+        )
         # actual payload:
         console.rule("Starting CROWNFriends")
         console.log("Executable: {}".format(_executable))
@@ -214,7 +216,7 @@ class CROWNFriends(CROWNExecuteBase):
                         "--input {}".format(inputfile),
                         "--era {}".format(self.branch_data["era"]),
                         "--scope {}".format(self.scopes[i]),
-                        "--sampletype {}".format(self.branch_data["sampletype"]),
+                        "--sample_type {}".format(self.branch_data["sample_type"]),
                         "--output {}".format(local_outputfile),
                     ],
                     sourcescript=[
