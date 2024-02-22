@@ -17,6 +17,7 @@ law.contrib.load("wlcg")
 
 
 class CROWNMultiFriends(CROWNExecuteBase):
+    output_collection_cls = law.NestedSiblingFileCollection
     friend_dependencies = luigi.ListParameter(significant=False)
     friend_mapping = luigi.DictParameter(significant=False, default={})
     friend_config = luigi.Parameter()
@@ -42,21 +43,21 @@ class CROWNMultiFriends(CROWNExecuteBase):
         )
         requirements["friend_tarball"] = CROWNBuildMultiFriend.req(self)
         for friend in self.friend_dependencies:
-            requirements[
-                f"CROWNFriends_{self.nick}_{self.friend_mapping[friend]}"
-            ] = CROWNFriends(
-                nick=self.nick,
-                analysis=self.analysis,
-                config=self.config,
-                production_tag=self.production_tag,
-                all_eras=self.all_eras,
-                shifts=self.shifts,
-                all_sampletypes=self.all_sampletypes,
-                era=self.era,
-                sampletype=self.sampletype,
-                scopes=self.scopes,
-                friend_name=self.friend_mapping[friend],
-                friend_config=friend,
+            requirements[f"CROWNFriends_{self.nick}_{self.friend_mapping[friend]}"] = (
+                CROWNFriends(
+                    nick=self.nick,
+                    analysis=self.analysis,
+                    config=self.config,
+                    production_tag=self.production_tag,
+                    all_eras=self.all_eras,
+                    shifts=self.shifts,
+                    all_sampletypes=self.all_sampletypes,
+                    era=self.era,
+                    sampletype=self.sampletype,
+                    scopes=self.scopes,
+                    friend_name=self.friend_mapping[friend],
+                    friend_config=friend,
+                )
             )
         return requirements
 
@@ -161,9 +162,12 @@ class CROWNMultiFriends(CROWNExecuteBase):
         scope = branch_data["scope"]
         era = branch_data["era"]
         sampletype = branch_data["sampletype"]
-        quantities_map_outputs = [
-            x for x in outputs if x.path.endswith("quantities_map.json")
-        ]
+        quantities_map_output = None
+        create_quantities_map = False
+        if self.branch_data["filecounter"] == 0:
+            console.log("Will create quantities map for scope {}".format(scope))
+            create_quantities_map = True
+            quantities_map_output = outputs[1]
         _base_workdir = os.path.abspath("workdir")
         create_abspath(_base_workdir)
         _workdir = os.path.join(
@@ -245,30 +249,28 @@ class CROWNMultiFriends(CROWNExecuteBase):
         )
         # for each outputfile, add the scope suffix
         output.copy_from_local(local_filename)
-        if self.branch == 0:
-            for i, outputfile in enumerate(quantities_map_outputs):
-                outputfile.parent.touch()
-                inputfile = os.path.join(
-                    _workdir,
-                    _outputfile.replace(".root", "_{}.root".format(self.scopes[i])),
-                )
-                local_outputfile = os.path.join(_workdir, "quantities_map.json")
-
-                self.run_command(
-                    command=[
-                        "python3",
-                        "processor/tasks/helpers/GetQuantitiesMap.py",
-                        "--input {}".format(inputfile),
-                        "--era {}".format(self.branch_data["era"]),
-                        "--scope {}".format(self.scopes[i]),
-                        "--sampletype {}".format(self.branch_data["sampletype"]),
-                        "--output {}".format(local_outputfile),
-                    ],
-                    sourcescript=[
-                        "{}/init.sh".format(_workdir),
-                    ],
-                    silent=True,
-                )
-                # copy the generated quantities_map json to the output
-                outputfile.copy_from_local(local_outputfile)
+        if create_quantities_map and quantities_map_output is not None:
+            quantities_map_output.parent.touch()
+            inputfile = os.path.join(
+                _workdir,
+                _outputfile.replace(".root", "_{}.root".format(scope)),
+            )
+            local_outputfile = os.path.join(_workdir, "quantities_map.json")
+            self.run_command(
+                command=[
+                    "python3",
+                    "processor/tasks/helpers/GetQuantitiesMap.py",
+                    "--input {}".format(inputfile),
+                    "--era {}".format(self.branch_data["era"]),
+                    "--scope {}".format(scope),
+                    "--sampletype {}".format(self.branch_data["sampletype"]),
+                    "--output {}".format(local_outputfile),
+                ],
+                sourcescript=[
+                    "{}/init.sh".format(_workdir),
+                ],
+                silent=False,
+            )
+            # copy the generated quantities_map json to the output
+            quantities_map_output.copy_from_local(local_outputfile)
         console.rule("Finished CROWNMultiFriends")
