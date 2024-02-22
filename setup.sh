@@ -286,7 +286,7 @@ action() {
             echo "Setting up LCG for Samplemanager"
             source ${lcg_path}
             echo "Starting Samplemanager"
-            python3 ${BASE_DIR}/sample_database/samplemanager/__main__.py --database-folder ${BASE_DIR}/sample_database
+            python3 ${BASE_DIR}/sample_database/samplemanager/main.py --database-folder ${BASE_DIR}/sample_database
         )
     fi
 }
