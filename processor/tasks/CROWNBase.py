@@ -10,6 +10,8 @@ from law.task.base import WrapperTask
 from rich.table import Table
 from helpers.helpers import *
 import ast
+from helpers.helpers import convert_to_comma_seperated
+import hashlib
 
 # import timeout_decorator
 import time
@@ -271,13 +273,38 @@ class CROWNBuildBase(Task):
     shifts = luigi.Parameter()
     build_dir = luigi.Parameter()
     install_dir = luigi.Parameter()
-    all_sample_types = luigi.ListParameter(significant=False)
-    all_eras = luigi.ListParameter(significant=False)
+    all_sample_types = luigi.ListParameter()
+    all_eras = luigi.ListParameter()
     analysis = luigi.Parameter()
     config = luigi.Parameter(significant=False)
     htcondor_request_cpus = luigi.IntParameter(default=1)
     production_tag = luigi.Parameter()
     threads = htcondor_request_cpus
+
+    def get_tarball_hash(self):
+        sample_types = list(self.all_sample_types)
+        eras = list(self.all_eras)
+        scopes = list(self.scopes)
+        if self.shifts is not None and self.shifts != "None":
+            shifts = list(self.shifts)
+            # console.log(f"shifts: {shifts}")
+        else:
+            shifts = ["None"]
+        sample_types.sort()
+        eras.sort()
+        scopes.sort()
+        shifts.sort()
+        # convert the lists to a single comma separated string
+        sample_types = convert_to_comma_seperated(sample_types)
+        eras = convert_to_comma_seperated(eras)
+        scopes = convert_to_comma_seperated(scopes)
+        shifts = convert_to_comma_seperated(shifts)
+        id_list = f"{sample_types};{eras};{scopes};{shifts}"
+        # console.log(f"id_list: {id_list}")
+        # console.log(f"Encoding: {str(id_list).encode()}")
+        hash = hashlib.sha256(str(id_list).encode()).hexdigest()
+        # console.log(f"hash: {hash}")
+        return hash
 
     def setup_build_environment(self, build_dir, install_dir, crownlib):
         """

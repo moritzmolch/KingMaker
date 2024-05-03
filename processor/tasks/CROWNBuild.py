@@ -15,7 +15,10 @@ class CROWNBuild(CROWNBuildBase):
         return result
 
     def output(self):
-        target = self.remote_target(f"crown_{self.analysis}_{self.config}.tar.gz")
+        # sort the sample types and eras to have a unique string for the tarball
+        target = self.remote_target(
+            f"crown_{self.analysis}_{self.config}_{self.get_tarball_hash()}.tar.gz"
+        )
         return target
 
     def run(self):
