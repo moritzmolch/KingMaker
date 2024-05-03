@@ -16,12 +16,16 @@ action() {
     export LUIGIPORT={{LUIGIPORT}}
     export X509_CERT_DIR=/cvmfs/grid.cern.ch/etc/grid-security/certificates
     export X509_VOMS_DIR=/cvmfs/grid.cern.ch/etc/grid-security/vomsdir
+    export XRD_WORKERTHREADS={{NTHREADS}}
+    export XRD_PARALLELEVTLOOP={{NTHREADS}}
     echo "------------------------------------------"
     echo " | USER = ${USER}"
     echo " | HOSTNAME = $(hostname)"
     echo " | ANA_NAME = {{ANA_NAME}}"
     echo " | ENV_NAME = {{ENV_NAME}}"
     echo " | TAG = {{TAG}}"
+    echo " | XRD_WORKERTHREADS = ${XRD_WORKERTHREADS}"
+    echo " | XRD_PARALLELEVTLOOP = ${XRD_PARALLELEVTLOOP}"
     echo "------------------------------------------"
 
     source /opt/conda/etc/profile.d/conda.sh
