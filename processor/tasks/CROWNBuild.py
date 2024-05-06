@@ -88,6 +88,8 @@ class CROWNBuildCombined(CROWNBuildBase):
             self.run_command_readable(command)
             console.rule("Finished CROWNBuild")
             self.upload_tarball(output, os.path.join(_install_dir, output.basename), 10)
+            # delete the local tarball
+            os.remove(os.path.join(_install_dir, output.basename))
 
 
 class CROWNBuild(CROWNBuildBase):
