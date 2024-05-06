@@ -9,6 +9,8 @@ def convert_to_comma_seperated(listobject):
     :return: a comma-separated string if the input is a list, or the input itself if it is a string or a
     list with only one element.
     """
+    if isinstance(listobject, set):
+        listobject = list(listobject)
     if isinstance(listobject, str):
         return listobject
     elif len(listobject) == 1:

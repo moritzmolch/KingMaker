@@ -8,8 +8,8 @@ from law.config import Config
 from framework import HTCondorWorkflow, Task
 from law.task.base import WrapperTask
 from rich.table import Table
-from helpers.helpers import *
-import ast
+from helpers.helpers import convert_to_comma_seperated
+import hashlib
 
 # import timeout_decorator
 import time
@@ -271,13 +271,41 @@ class CROWNBuildBase(Task):
     shifts = luigi.Parameter()
     build_dir = luigi.Parameter()
     install_dir = luigi.Parameter()
-    all_sample_types = luigi.ListParameter(significant=False)
-    all_eras = luigi.ListParameter(significant=False)
+    all_sample_types = luigi.ListParameter()
+    all_eras = luigi.ListParameter()
     analysis = luigi.Parameter()
     config = luigi.Parameter(significant=False)
     htcondor_request_cpus = luigi.IntParameter(default=1)
     production_tag = luigi.Parameter()
     threads = htcondor_request_cpus
+
+    def get_tarball_hash(self):
+        """
+        The function `get_tarball_hash` generates a SHA-256 hash based on concatenated and sorted lists of
+        sample types, eras, scopes, and shifts.
+        :return: The `get_tarball_hash` method returns a SHA-256 hash of a string created by concatenating
+        sorted and comma-separated lists of sample types, eras, scopes, and shifts.
+        """
+
+        sample_types = list(self.all_sample_types)
+        eras = list(self.all_eras)
+        scopes = list(self.scopes)
+        if self.shifts is not None and self.shifts != "None":
+            shifts = list(self.shifts)
+        else:
+            shifts = ["None"]
+        sample_types.sort()
+        eras.sort()
+        scopes.sort()
+        shifts.sort()
+        # convert the lists to a single comma separated string
+        sample_types = convert_to_comma_seperated(sample_types)
+        eras = convert_to_comma_seperated(eras)
+        scopes = convert_to_comma_seperated(scopes)
+        shifts = convert_to_comma_seperated(shifts)
+        id_list = f"{sample_types};{eras};{scopes};{shifts}"
+        hash = hashlib.sha256(str(id_list).encode()).hexdigest()
+        return hash
 
     def setup_build_environment(self, build_dir, install_dir, crownlib):
         """
@@ -333,7 +361,7 @@ class CROWNBuildBase(Task):
         for i in range(retries):
             try:
                 console.log(f"Copying to remote (attempt {i+1}): {output.path}")
-                self.copy_from_local_with_timeout(output, path)
+                self.copy_from_local_with_timeout(output, os.path.abspath(path))
                 return True
             except Exception as e:
                 console.log(f"Upload failed (attempt {i+1}): {e}")
