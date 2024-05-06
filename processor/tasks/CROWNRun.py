@@ -31,11 +31,21 @@ class CROWNRun(CROWNExecuteBase):
             era=self.era,
             sample_type=self.sample_type,
         )
-        requirements["tarball"] = CROWNBuild.req(self)
+        for sample_type in self.all_sample_types:
+            for era in self.all_eras:
+                requirements[f"tarball_{sample_type}_{era}"] = CROWNBuild.req(
+                    self, era=era, sample_type=sample_type
+                )
         return requirements
 
     def requires(self):
-        return {"tarball": CROWNBuild.req(self)}
+        requirements = {}
+        for sample_type in self.all_sample_types:
+            for era in self.all_eras:
+                requirements[f"tarball_{sample_type}_{era}"] = CROWNBuild.req(
+                    self, era=era, sample_type=sample_type
+                )
+        return requirements
 
     def create_branch_map(self):
         branch_map = {}
@@ -112,6 +122,8 @@ class CROWNRun(CROWNExecuteBase):
         )
         create_abspath(_workdir)
         _inputfiles = branch_data["files"]
+        _sample_type = branch_data["sample_type"]
+        _era = branch_data["era"]
         # set the outputfilename to the first name in the output list, removing the scope suffix
         _outputfile = str(
             rootfile_outputs[0].basename.replace(
@@ -121,10 +133,9 @@ class CROWNRun(CROWNExecuteBase):
         _abs_executable = "{}/{}_{}_{}".format(
             _workdir, self.config, branch_data["sample_type"], branch_data["era"]
         )
-        console.log(
-            "Getting CROWN tarball from {}".format(self.input()["tarball"].uri())
-        )
-        with self.input()["tarball"].localize("r") as _file:
+        _tarball = self.input()["tarball_{}_{}".format(_sample_type, _era)]
+        console.log(f"Getting CROWN tarball from {_tarball.uri()}")
+        with _tarball.localize("r") as _file:
             _tarballpath = _file.path
         # first unpack the tarball if the exec is not there yet
         _tempfile = os.path.join(

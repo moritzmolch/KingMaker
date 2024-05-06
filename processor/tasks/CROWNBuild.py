@@ -1,11 +1,13 @@
 import os
+import luigi
 from framework import console
 from BuildCROWNLib import BuildCROWNLib
 from CROWNBase import CROWNBuildBase
 from helpers.helpers import convert_to_comma_seperated
+import tarfile
 
 
-class CROWNBuild(CROWNBuildBase):
+class CROWNBuildCombined(CROWNBuildBase):
     """
     Gather and compile CROWN with the given configuration
     """
@@ -86,3 +88,77 @@ class CROWNBuild(CROWNBuildBase):
             self.run_command_readable(command)
             console.rule("Finished CROWNBuild")
             self.upload_tarball(output, os.path.join(_install_dir, output.basename), 10)
+
+
+class CROWNBuild(CROWNBuildBase):
+    """
+    Gather and compile CROWN with the given configuration
+    """
+
+    era = luigi.Parameter()
+    sample_type = luigi.Parameter()
+
+    def requires(self):
+        result = {"combined_build": CROWNBuildCombined.req(self)}
+        return result
+
+    def output(self):
+        return self.remote_target(
+            f"crown_{self.analysis}_{self.config}_{self.sample_type}_{self.era}.tar.gz"
+        )
+
+    def run(self):
+        # get the output from the combined build
+        combined_build = self.input()["combined_build"]
+        # get output file path
+        output = self.output()
+        _analysis = str(self.analysis)
+        _config = str(self.config)
+        _era = str(self.era)
+        _sample_type = str(self.sample_type)
+        # also use the tag for the local tarball creation
+        _tag = (
+            f"{self.production_tag}/CROWN_{_analysis}_{_config}_{_sample_type}_{_era}"
+        )
+        _install_dir = os.path.join(str(self.install_dir), _tag)
+        _unpacked_dir = os.path.join(
+            str(self.install_dir), f"{self.production_tag}/CROWN_{_analysis}_{_config}"
+        )
+        _tarball = os.path.join(_install_dir, output.basename)
+        os.makedirs(os.path.dirname(_tarball), exist_ok=True)
+        # now get the specific tarball from the combined build, and upload it
+        # first unpack the tarball if the exec is not there yet
+        if not os.path.exists(_unpacked_dir):
+            os.makedirs(_unpacked_dir)
+            with combined_build.localize("r") as _file:
+                _combined_tarball = _file.path
+                # unpack the tarball
+                tar = tarfile.open(_combined_tarball, "r:gz")
+                tar.extractall(_unpacked_dir)
+
+        # now pack the specific tarball, excluding unwanted executables
+        def exclude_files(tarinfo):
+            filename = os.path.basename(tarinfo.name)
+            if filename.endswith(".tar.gz"):
+                return None
+            if filename.startswith(f"{_config}") and not filename.endswith(
+                f"{_sample_type}_{_era}"
+            ):
+                return None
+            else:
+                return tarinfo
+
+        console.log(f"Creating tarball for {_sample_type} {_era}")
+        with tarfile.open(_tarball, "w:gz") as tar:
+            tar.add(
+                _unpacked_dir,
+                arcname=os.path.basename(_unpacked_dir),
+                filter=exclude_files,
+            )
+        # now upload the tarball
+        self.upload_tarball(output, os.path.join(_install_dir, output.basename), 10)
+        # delete the local tarball
+        os.remove(_tarball)
+        console.rule(
+            f"Finished CROWNBuild for {_analysis} {_config} {_sample_type} {_era}"
+        )

@@ -360,7 +360,7 @@ class CROWNBuildBase(Task):
         for i in range(retries):
             try:
                 console.log(f"Copying to remote (attempt {i+1}): {output.path}")
-                self.copy_from_local_with_timeout(output, path)
+                self.copy_from_local_with_timeout(output, os.path.abspath(path))
                 return True
             except Exception as e:
                 console.log(f"Upload failed (attempt {i+1}): {e}")
