@@ -19,7 +19,7 @@ class CROWNBuildCombined(CROWNBuildBase):
     def output(self):
         # sort the sample types and eras to have a unique string for the tarball
         target = self.remote_target(
-            f"crown_{self.analysis}_{self.config}_{self.get_tarball_hash()}.tar.gz"
+            f"crown_{self.analysis}_{self.config}_{self.get_tarball_hash()}.hash"
         )
         return target
 
@@ -27,11 +27,6 @@ class CROWNBuildCombined(CROWNBuildBase):
         crownlib = self.input()["crownlib"]
         # get output file path
         output = self.output()
-        # convert list to comma separated strings
-        _all_sample_types = convert_to_comma_seperated(self.all_sample_types)
-        _all_eras = convert_to_comma_seperated(self.all_eras)
-        _shifts = convert_to_comma_seperated(self.shifts)
-        _scopes = convert_to_comma_seperated(self.scopes)
         _analysis = str(self.analysis)
         _config = str(self.config)
         _threads = str(self.threads)
@@ -48,6 +43,34 @@ class CROWNBuildCombined(CROWNBuildBase):
             self.upload_tarball(
                 output, os.path.join(os.path.abspath(_install_dir), output.basename), 10
             )
+            return
+        # check if certain sample types and eras are already build, if so, skip
+        available_executables = []
+        _required_sample_types = set()
+        _required_eras = set()
+        if os.path.exists(os.path.join(_install_dir)):
+            available_files = os.listdir(_install_dir)
+            available_executables = [
+                name.replace("config_", "")
+                for name in available_files
+                if name.startswith("config_")
+            ]
+        console.log(f"Available executables: {available_executables}")
+        for sample_type in self.all_sample_types:
+            for era in self.all_eras:
+                if f"{sample_type}_{era}" not in available_executables:
+                    _required_sample_types.add(sample_type)
+                    _required_eras.add(era)
+                else:
+                    console.log(
+                        f"Skipping {_analysis} {_config} {sample_type} {era} as it is already built"
+                    )
+        _required_eras = convert_to_comma_seperated(_required_eras)
+        _required_sample_types = convert_to_comma_seperated(_required_sample_types)
+        _shifts = convert_to_comma_seperated(self.shifts)
+        _scopes = convert_to_comma_seperated(self.scopes)
+        if len(_required_sample_types) == 0 or len(_required_eras) == 0:
+            console.rule("All required CROWN build already exist")
         else:
             console.rule("Building new CROWN tarball")
             _build_dir, _install_dir = self.setup_build_environment(
@@ -63,8 +86,8 @@ class CROWNBuildCombined(CROWNBuildBase):
             console.log(f"Threads: {_threads}")
             console.log(f"Analysis: {_analysis}")
             console.log(f"Config: {_config}")
-            console.log(f"Sampletypes: {_all_sample_types}")
-            console.log(f"Eras: {_all_eras}")
+            console.log(f"Sampletypes: {_required_sample_types}")
+            console.log(f"Eras: {_required_eras}")
             console.log(f"Scopes: {_scopes}")
             console.log(f"Shifts: {_shifts}")
             console.rule("")
@@ -76,8 +99,8 @@ class CROWNBuildCombined(CROWNBuildBase):
                 _crown_path,  # CROWNFOLDER=$1
                 _analysis,  # ANALYSIS=$2
                 _config,  # CONFIG=$3
-                _all_sample_types,  # SAMPLES=$4
-                _all_eras,  # all_eras=$5
+                _required_sample_types,  # SAMPLES=$4
+                _required_eras,  # all_eras=$5
                 _scopes,  # SCOPES=$6
                 _shifts,  # SHIFTS=$7
                 _install_dir,  # INSTALLDIR=$8
@@ -87,9 +110,10 @@ class CROWNBuildCombined(CROWNBuildBase):
             ]
             self.run_command_readable(command)
             console.rule("Finished CROWNBuild")
-            self.upload_tarball(output, os.path.join(_install_dir, output.basename), 10)
-            # delete the local tarball
-            os.remove(os.path.join(_install_dir, output.basename))
+            # upload an small file to signal that the build is done
+        with open(os.path.join(_install_dir, output.basename), "w") as f:
+            f.write("CROWN build done")
+        output.copy_from_local(os.path.join(_install_dir, output.basename))
 
 
 class CROWNBuild(CROWNBuildBase):
@@ -110,8 +134,6 @@ class CROWNBuild(CROWNBuildBase):
         )
 
     def run(self):
-        # get the output from the combined build
-        combined_build = self.input()["combined_build"]
         # get output file path
         output = self.output()
         _analysis = str(self.analysis)
@@ -128,15 +150,10 @@ class CROWNBuild(CROWNBuildBase):
         )
         _tarball = os.path.join(_install_dir, output.basename)
         os.makedirs(os.path.dirname(_tarball), exist_ok=True)
-        # now get the specific tarball from the combined build, and upload it
-        # first unpack the tarball if the exec is not there yet
         if not os.path.exists(_unpacked_dir):
-            os.makedirs(_unpacked_dir)
-            with combined_build.localize("r") as _file:
-                _combined_tarball = _file.path
-                # unpack the tarball
-                tar = tarfile.open(_combined_tarball, "r:gz")
-                tar.extractall(_unpacked_dir)
+            raise FileNotFoundError(
+                f"No builds for {self.production_tag}/CROWN_{_analysis}_{_config} found"
+            )
 
         # now pack the specific tarball, excluding unwanted executables
         def exclude_files(tarinfo):
@@ -154,7 +171,7 @@ class CROWNBuild(CROWNBuildBase):
         with tarfile.open(_tarball, "w:gz") as tar:
             tar.add(
                 _unpacked_dir,
-                arcname=os.path.basename(_unpacked_dir),
+                arcname=".",
                 filter=exclude_files,
             )
         # now upload the tarball
