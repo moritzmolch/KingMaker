@@ -282,12 +282,18 @@ class CROWNBuildBase(Task):
     threads = htcondor_request_cpus
 
     def get_tarball_hash(self):
+        """
+        The function `get_tarball_hash` generates a SHA-256 hash based on concatenated and sorted lists of
+        sample types, eras, scopes, and shifts.
+        :return: The `get_tarball_hash` method returns a SHA-256 hash of a string created by concatenating
+        sorted and comma-separated lists of sample types, eras, scopes, and shifts.
+        """
+
         sample_types = list(self.all_sample_types)
         eras = list(self.all_eras)
         scopes = list(self.scopes)
         if self.shifts is not None and self.shifts != "None":
             shifts = list(self.shifts)
-            # console.log(f"shifts: {shifts}")
         else:
             shifts = ["None"]
         sample_types.sort()
@@ -300,10 +306,7 @@ class CROWNBuildBase(Task):
         scopes = convert_to_comma_seperated(scopes)
         shifts = convert_to_comma_seperated(shifts)
         id_list = f"{sample_types};{eras};{scopes};{shifts}"
-        # console.log(f"id_list: {id_list}")
-        # console.log(f"Encoding: {str(id_list).encode()}")
         hash = hashlib.sha256(str(id_list).encode()).hexdigest()
-        # console.log(f"hash: {hash}")
         return hash
 
     def setup_build_environment(self, build_dir, install_dir, crownlib):
