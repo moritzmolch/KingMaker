@@ -29,7 +29,7 @@ class CROWNBuildCombined(CROWNBuildBase):
         output = self.output()
         _analysis = str(self.analysis)
         _config = str(self.config)
-        _threads = str(self.threads)
+        _threads = str(self.htcondor_request_cpus)
         # also use the tag for the local tarball creation
         _tag = f"{self.production_tag}/CROWN_{_analysis}_{_config}"
         _install_dir = os.path.join(str(self.install_dir), _tag)

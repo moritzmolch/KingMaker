@@ -277,7 +277,6 @@ class CROWNBuildBase(Task):
     config = luigi.Parameter(significant=False)
     htcondor_request_cpus = luigi.IntParameter(default=1)
     production_tag = luigi.Parameter()
-    threads = htcondor_request_cpus
 
     def get_tarball_hash(self):
         """
