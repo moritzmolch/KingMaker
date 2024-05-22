@@ -13,6 +13,7 @@ class BuildCROWNLib(Task):
     build_dir = luigi.Parameter()
     install_dir = luigi.Parameter()
     production_tag = luigi.Parameter()
+    friend_name = luigi.Parameter(default="ntuples")
 
     def output(self):
         target = self.remote_target("libCROWNLIB.so")
@@ -26,7 +27,11 @@ class BuildCROWNLib(Task):
             os.path.join(str(self.install_dir), str(self.production_tag))
         )
         _build_dir = os.path.abspath(
-            os.path.join(str(self.build_dir), str(self.production_tag), "crownlib")
+            os.path.join(
+                str(self.build_dir),
+                str(self.production_tag),
+                f"crownlib_{self.friend_name}",
+            )
         )
         _crown_path = os.path.abspath("CROWN")
         _compile_script = os.path.join(
