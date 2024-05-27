@@ -16,7 +16,7 @@ class BuildCROWNLib(Task):
     friend_name = luigi.Parameter(default="ntuples")
 
     def output(self):
-        target = self.remote_target("libCROWNLIB.so")
+        target = self.remote_target(f"{self.friend_name}/libCROWNLIB.so")
         return target
 
     def run(self):
@@ -24,7 +24,11 @@ class BuildCROWNLib(Task):
         output = self.output()
         # also use the tag for the local tarball creation
         _install_dir = os.path.abspath(
-            os.path.join(str(self.install_dir), str(self.production_tag))
+            os.path.join(
+                str(self.install_dir),
+                str(self.production_tag),
+                f"crownlib_{self.friend_name}",
+            )
         )
         _build_dir = os.path.abspath(
             os.path.join(
