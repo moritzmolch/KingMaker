@@ -57,9 +57,7 @@ class QuantitiesMap(law.LocalWorkflow, Task):
 
     def output(self):
         target = self.remote_target(
-            "{}/{}_{}_quantities_map.json".format(
-                self.production_tag, self.era, self.sample_type
-            )
+            f"{self.production_tag}/{self.era}_{'-'.join(list(self.scopes))}_{self.sample_type}_quantities_map.json".format()
         )
         target.parent.touch()
         return target
