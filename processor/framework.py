@@ -2,8 +2,9 @@ import os
 import luigi
 import law
 import select
+import subprocess
+import warnings
 from law.util import interruptable_popen, readable_popen
-from subprocess import PIPE, Popen
 from rich.console import Console
 from law.util import merge_dicts, DotDict
 from datetime import datetime
@@ -12,16 +13,19 @@ from tempfile import mkdtemp
 from getpass import getuser
 from law.target.collection import flatten_collections
 from law.config import Config
-import subprocess
+from luigi.parameter import UnconsumedParameterWarning
 
 law.contrib.load("wlcg")
 law.contrib.load("htcondor")
-# try to get the terminal width, if this fails, we are in a remote job, set it to 140
+# try to get the terminal width, if this fails, we are probably in a remote job, set it to 140
 try:
     current_width = os.get_terminal_size().columns
 except OSError:
     current_width = 140
 console = Console(width=current_width)
+
+# Ignore warnings about unused parameters that are set in the default config but not used by all tasks
+warnings.simplefilter("ignore", UnconsumedParameterWarning)
 
 # Determine startup time to use as default production_tag
 # LOCAL_TIMESTAMP is used by remote workflows to ensure consistent tags
@@ -41,24 +45,25 @@ else:
 class Task(law.Task):
     local_user = getuser()
     wlcg_path = luigi.Parameter(description="Base-path to remote file location.")
-    local_output_path = luigi.Parameter(description="Base-path to local file location.")
-    output_destination = luigi.Parameter(description="Whether to use local storage.")
+    local_output_path = luigi.Parameter(
+        description="Base-path to local file location.", 
+        default=os.getenv("ANALYSIS_DATA_PATH")
+    )
+    is_local_output = luigi.BoolParameter(description="Whether to use local storage. False by default.")
 
     # Behaviour of production_tag:
     # If a tag is give it will be used for the respective task.
-    # If no tag is given a timestamp abse on startup_time is used.
-    #   This timestamp is the same for all tasks with no set production_tag.
+    # If no tag is given a timestamp based on startup_time is used.
+    #   This timestamp is the same for all tasks in a workflow run with no set production_tag.
     production_tag = luigi.Parameter(
         default=f"default/{startup_time}",
         description="Tag to differentiate workflow runs. Set to a timestamp as default.",
     )
     output_collection_cls = law.NestedSiblingFileCollection
 
-    @property
-    def is_local_output(self):
-        return self.output_destination == "local"
-
-    # Path of local targets. Composed from the analysis path set during the setup.sh,
+    # Path of local targets. 
+    #   Composed from the analysis path set during the setup.sh 
+    #   or the local_output_path if is_local_output is set,
     #   the production_tag, the name of the task and an additional path if provided.
     def local_path(self, *path):
         return os.path.join(
@@ -131,8 +136,8 @@ class Task(law.Task):
         code, out, error = interruptable_popen(
             source_command_string,
             shell=True,
-            stdout=PIPE,
-            stderr=PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             # rich_console=console
         )
         if code != 0:
@@ -173,8 +178,8 @@ class Task(law.Task):
             code, out, error = interruptable_popen(
                 " ".join(command),
                 shell=True,
-                stdout=PIPE,
-                stderr=PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 env=run_env,
                 cwd=run_location,
             )
@@ -214,11 +219,11 @@ class Task(law.Task):
             console.rule()
             console.log(logstring)
             try:
-                p = Popen(
+                p = subprocess.Popen(
                     " ".join(command),
                     shell=True,
-                    stdout=PIPE,
-                    stderr=PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     env=run_env,
                     cwd=run_location,
                     encoding="utf-8",
@@ -263,7 +268,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         description="Runtime to be set in HTCondor job submission."
     )
     htcondor_request_cpus = luigi.Parameter(
-        description="Number of CPU cores to be requested in HTCondor job submission."
+        description="Number of CPU cores to be requested in HTCondor job submission.",
+        default="1"
     )
     htcondor_request_gpus = luigi.Parameter(
         default="0",
@@ -371,7 +377,6 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
 
     def htcondor_create_job_file_factory(self):
         factory = super(HTCondorWorkflow, self).htcondor_create_job_file_factory()
-        factory.is_tmp = False
         # Print location of job dir
         console.log(f"HTCondor job directory is: {factory.dir}")
         return factory
@@ -451,8 +456,6 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             )
         if not tarball.exists():
             # Make new tarball
-            prevdir = os.getcwd()
-            os.system("cd $ANALYSIS_PATH")
             # get absolute path to tarball dir
             tarball_dir = os.path.abspath(f"tarballs/{self.production_tag}")
             tarball_local = law.LocalFileTarget(
@@ -470,6 +473,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             #   The processor directory, thhe relevant config files, law
             #   and any other files specified in the additional_files parameter
             command = [
+                "cd $ANALYSIS_PATH;",
                 "tar",
                 "--exclude",
                 "*.pyc",
@@ -484,8 +488,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             ] + list(self.additional_files)
             code, out, error = interruptable_popen(
                 command,
-                stdout=PIPE,
-                stderr=PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 # rich_console=console
             )
             if code != 0:
@@ -501,14 +505,13 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             tarball.parent.touch()
             tarball.copy_from_local(src=tarball_local.path)
             console.rule("Framework tarball uploaded!")
-            os.chdir(prevdir)
         # Check if env of this task was found in cvmfs
         env_list = os.getenv("ENV_NAMES_LIST").split(";")
         env_list = list(dict.fromkeys(env_list[:-1]))
         env_dict = dict(env.split(",") for env in env_list)
         if env_dict[self.ENV_NAME] == "False":
             # IMPORTANT: environments have to be named differently with each change
-            #            as caching prevents a clean overwrite of existing files
+            #            as caching prevents a clean overwrite of existing files on some nodes
             if self.is_local_output:
                 tarball_env = law.LocalFileTarget(
                     path=f"env_tarballs/{self.ENV_NAME}.tar.gz",
