@@ -2,34 +2,31 @@
 # This script setups all dependencies necessary for making law executable                  #
 ############################################################################################
 
+
+_addpy() {
+    [ ! -z "$1" ] && export PYTHONPATH="$1:${PYTHONPATH}"
+}
+
+_addbin() {
+    [ ! -z "$1" ] && export PATH="$1:${PATH}"
+}
+
 action() {
 
     # Check if law was already set up in this shell
     if ( [[ ! -z ${LAW_IS_SET_UP} ]] && [[ ! "$@" =~ "-f" ]] ); then
-        echo "LAW was already set up in this shell. Please, use a new one."
+        echo "KingMaker was already set up in this shell. Please, use a new one."
         return 1
     fi
 
-    # Check if current machine is an etp portal machine.
-    PORTAL_LIST=("bms1.etp.kit.edu" "bms2.etp.kit.edu" "bms3.etp.kit.edu" "portal1.etp.kit.edu" "bms1-centos7.etp.kit.edu" "bms2-centos7.etp.kit.edu" "bms3-centos7.etp.kit.edu" "portal1-centos7.etp.kit.edu")
-    CURRENT_HOST=$(hostname --long)
-    if [[ ! " ${PORTAL_LIST[*]} " =~ " ${CURRENT_HOST} " ]]; then
-        echo "Current host (${CURRENT_HOST}) not in list of allowed machines:"
-        printf '%s\n' "${PORTAL_LIST[@]}"
-        return 1
-    else
-        echo "Running on ${CURRENT_HOST}."
+    # Check if law already tried to set up in this shell
+    if ( [[ ! -z ${LAW_TRIED_TO_SET_UP} ]] && [[ ! "$@" =~ "-f" ]] ); then
+        echo "Kingmaker already tried to set up in this shell. This might lead to unintended behaviour."
     fi
 
-    #list of available analyses
-    ANA_LIST=("KingMaker" "GPU_example" "ML_train")
-    if [[ "$@" =~ "-l" ]]; then
-        echo "Available analyses:"
-        printf '%s\n' "${ANA_LIST[@]}"
-        return 0
-    fi
+    export LAW_TRIED_TO_SET_UP="True"
 
-    # determine the directory of this file
+    # Determine the directory of this file
     if [ ! -z "${ZSH_VERSION}" ]; then
         local THIS_FILE="${(%):-%x}"
     else
@@ -38,30 +35,32 @@ action() {
 
     local BASE_DIR="$( cd "$( dirname "${THIS_FILE}" )" && pwd )"
 
-    _addpy() {
-        [ ! -z "$1" ] && export PYTHONPATH="$1:${PYTHONPATH}"
-    }
+    echo  "$(bash scripts/os-version.sh) on $(hostname) from dir ${BASE_DIR}"
 
-    _addbin() {
-        [ ! -z "$1" ] && export PATH="$1:${PATH}"
-    }
-
-
+    # Workflow to be set up
     ANA_NAME_GIVEN=$1
 
-    #Determine analysis to be used. Default is first in list.
+    # List of available workflows
+    ANA_LIST=("KingMaker" "GPU_example" "ML_train")
+    if [[ "$@" =~ "-l" ]]; then
+        echo "Available workflows:"
+        printf '%s\n' "${ANA_LIST[@]}"
+        return 0
+    fi
+
+    # Determine workflow to be used. Default is first in list.
     if [[ -z "${ANA_NAME_GIVEN}" ]]; then
-        echo "No analysis chosen. Please choose from:"
+        echo "No workflow chosen. Please choose from:"
         printf '%s\n' "${ANA_LIST[@]}"
         return 1
     else
-        #Check if given analysis is in list
+        # Check if given workflow is in list
         if [[ ! " ${ANA_LIST[*]} " =~ " ${ANA_NAME_GIVEN} " ]] ; then
             echo "Not a valid name. Allowed choices are:"
             printf '%s\n' "${ANA_LIST[@]}"
             return 1
         else
-            echo "Using ${ANA_NAME_GIVEN} analysis."
+            echo "Using ${ANA_NAME_GIVEN} workflow."
             export ANA_NAME="${ANA_NAME_GIVEN}"
         fi
     fi
@@ -89,52 +88,43 @@ action() {
     # NOTE2: HTCondor jobs that rely on exported miniforge envs might need additional scratch space
     if [[ -d "/cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/envs/${STARTING_ENV}" ]]; then
         echo "${STARTING_ENV} environment found in cvmfs."
-        CVMFS_ENV_PRESENT_START="True"
+        echo "Activating starting-env ${STARTING_ENV} from cvmfs."
+        source /cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/bin/activate ${STARTING_ENV}
     else
         echo "${STARTING_ENV} environment not found in cvmfs. Using miniforge."
         # Install miniforge if necessary
         if [ ! -f "miniforge/bin/activate" ]; then
             # Miniforge version used for all environments
-            MINICONDA_VERSION="Miniconda3-py39_23.5.2-0-Linux-x86_64"
+            MAMBAFORGE_VERSION="24.3.0-0"
             MAMBAFORGE_INSTALLER="Mambaforge-${MAMBAFORGE_VERSION}-$(uname)-$(uname -m).sh"
-            echo "Miniforge could not be found, installing miniforge ..."
+            echo "Miniforge could not be found, installing miniforge version ${MAMBAFORGE_INSTALLER}"
             echo "More information can be found in"
             echo "https://github.com/conda-forge/miniforge"
             curl -L -O https://github.com/conda-forge/miniforge/releases/download/${MAMBAFORGE_VERSION}/${MAMBAFORGE_INSTALLER}
             bash ${MAMBAFORGE_INSTALLER} -b -s -p miniforge
             rm -f ${MAMBAFORGE_INSTALLER}
         fi
-        # source base env of miniforge
+        # Source base env of miniforge
         source miniforge/bin/activate ''
 
-        # check if correct miniforge env is running
-        if [ "${CONDA_DEFAULT_ENV}" != "${STARTING_ENV}" ]; then
-            if [ -d "miniforge/envs/${STARTING_ENV}" ]; then
-                echo  "${STARTING_ENV} env found using conda."
-            else
-                # Create miniforge env from yaml file if necessary
-                echo "Creating ${STARTING_ENV} env from conda_environments/${STARTING_ENV}_env.yml..."
-                if [[ ! -f "conda_environments/${STARTING_ENV}_env.yml" ]]; then
-                    echo "conda_environments/${STARTING_ENV}_env.yml not found. Unable to create environment."
-                    return 1
-                fi
-                conda env create -f conda_environments/${STARTING_ENV}_env.yml -n ${STARTING_ENV}
-                echo  "${STARTING_ENV} env built using miniforge."
+        # Check if correct miniforge env is running
+        if [ -d "miniforge/envs/${STARTING_ENV}" ]; then
+            echo  "${STARTING_ENV} env found using conda."
+        else
+            # Create miniforge env from yaml file if necessary
+            echo "Creating ${STARTING_ENV} env from conda_environments/${STARTING_ENV}_env.yml..."
+            if [[ ! -f "conda_environments/${STARTING_ENV}_env.yml" ]]; then
+                echo "conda_environments/${STARTING_ENV}_env.yml not found. Unable to create environment."
+                return 1
             fi
+            conda env create -f conda_environments/${STARTING_ENV}_env.yml -n ${STARTING_ENV}
+            echo  "${STARTING_ENV} env built using miniforge."
         fi
-        CVMFS_ENV_PRESENT_START="False"
-    fi
-
-    # Actvate starting-env
-    if [[ "${CVMFS_ENV_PRESENT_START}" == "True" ]]; then
-        echo "Activating starting-env ${STARTING_ENV} from cvmfs."
-        source /cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/bin/activate ${STARTING_ENV}
-    else
         echo "Activating starting-env ${STARTING_ENV} from miniforge."
         conda activate ${STARTING_ENV}
     fi
 
-    #Set up other dependencies based on analysis
+    # Set up other dependencies based on workflow
     ############################################
     case ${ANA_NAME} in
         KingMaker)
@@ -163,15 +153,21 @@ action() {
         export PYTHONPATH=${MODULE_PYTHONPATH}:${PYTHONPATH}
     fi
 
-    # Check is law was cloned, and set it up if not
+    # Check is law was set up, and do so if not
     if [ -z "$(ls -A law)" ]; then
         git submodule update --init --recursive -- law
     fi
 
-    # add voms proxy path
-    export X509_USER_PROXY=$(voms-proxy-info -path)
-    # first check if the user already has a luigid scheduler running
-    # start a luidigd scheduler if there is one already running
+    # Check for voms proxy
+    voms-proxy-info -exists &>/dev/null
+    if [[ "$?" -eq "1" ]]; then
+        echo "No valid voms proxy found, remote storage might be inaccessible."
+        echo "Please ensure that it exists and that 'X509_USER_PROXY' is properly set."
+    fi
+    
+
+    # First check if the user already has a luigid scheduler running
+    # Start a luidigd scheduler if there is one already running
     if [ -z "$(pgrep -u ${USER} -f luigid)" ]; then
         echo "Starting Luigi scheduler... using a random port"
         while
@@ -210,7 +206,7 @@ action() {
     _addpy "${BASE_DIR}/processor"
     _addpy "${BASE_DIR}/processor/tasks"
 
-    # Create law index for analysis if not previously done
+    # Create law index for workflow if not previously done
     if [[ ! -f "${LAW_HOME}/index" ]]; then
         law index --verbose
         if [[ "$?" -eq "1" ]]; then
@@ -219,7 +215,7 @@ action() {
         fi
     fi
 
-    # set an alias for the sample manager
+    # Set an alias for the sample manager
     source scripts/os-version.sh
     if [[ "$distro" == "CentOS" ]]; then
         if [[ ${os_version:0:1} == "7" ]]; then
@@ -246,32 +242,32 @@ action() {
     else
         lcg_path="Samplemanager not support on ${distro} ${os_version}"
     fi
-    # now set the alias
+    # Now set the alias
     function sample_manager () {
-    # determine the directory of this file
-    if [ ! -z "${ZSH_VERSION}" ]; then
-        local THIS_FILE="${(%):-%x}"
-    else
-        local THIS_FILE="${BASH_SOURCE[0]}"
-    fi
+        # Determine the directory of this file
+        if [ ! -z "${ZSH_VERSION}" ]; then
+            local THIS_FILE="${(%):-%x}"
+        else
+            local THIS_FILE="${BASH_SOURCE[0]}"
+        fi
 
-    local BASE_DIR="$( cd "$( dirname "${THIS_FILE}" )" && pwd )"
-    if [[ "$lcg_path" == "Samplemanager not support on ${distro} ${os_version}" ]]; then
-        echo ${lcg_path}
-    else
-        (
-            echo "Setting up LCG for Samplemanager"
-            source ${lcg_path}
-            echo "Starting Samplemanager"
-            python3 ${BASE_DIR}/sample_database/samplemanager/main.py --database-folder ${BASE_DIR}/sample_database
-        )
-    fi
-}
+        local BASE_DIR="$( cd "$( dirname "${THIS_FILE}" )" && pwd )"
+        if [[ "$lcg_path" == "Samplemanager not support on ${distro} ${os_version}" ]]; then
+            echo ${lcg_path}
+        else
+            (
+                echo "Setting up LCG for Samplemanager"
+                source ${lcg_path}
+                echo "Starting Samplemanager"
+                python3 ${BASE_DIR}/sample_database/samplemanager/main.py --database-folder ${BASE_DIR}/sample_database
+            )
+        fi
+    }
 
-function monitor_production () {
-    # parse all user arguments and pass them to the python script
-    python3 scripts/ProductionStatus.py $@
-}
+    function monitor_production () {
+        # Parse all user arguments and pass them to the python script
+        python3 scripts/ProductionStatus.py $@
+    }
 
     export LAW_IS_SET_UP="True"
 }
