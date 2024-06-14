@@ -295,6 +295,10 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         default=[],
         description="Additional files to be included in the job tarball. Will be unpacked in the run directory",
     )
+    remote_source_script = luigi.Parameter(
+        description="Script to source environment in remote jobs. Leave empty if not needed. Defaults to use with docker images",
+        default="source /opt/conda/bin/activate env"
+    )
 
     # Use proxy file located in $X509_USER_PROXY or /tmp/x509up_u$(id) if empty
     htcondor_user_proxy = law.wlcg.get_vomsproxy_file()
@@ -505,40 +509,15 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             tarball.parent.touch()
             tarball.copy_from_local(src=tarball_local.path)
             console.rule("Framework tarball uploaded!")
-        # Check if env of this task was found in cvmfs
-        env_list = os.getenv("ENV_NAMES_LIST").split(";")
-        env_list = list(dict.fromkeys(env_list[:-1]))
-        env_dict = dict(env.split(",") for env in env_list)
-        if env_dict[self.ENV_NAME] == "False":
-            # IMPORTANT: environments have to be named differently with each change
-            #            as caching prevents a clean overwrite of existing files on some nodes
-            if self.is_local_output:
-                tarball_env = law.LocalFileTarget(
-                    path=f"env_tarballs/{self.ENV_NAME}.tar.gz",
-                    fs=law.LocalFileSystem(
-                        None,
-                        base=f"{os.path.expandvars(self.local_output_path)}",
-                    ),
-                )
-            else:
-                tarball_env = law.wlcg.WLCGFileTarget(
-                    path=f"env_tarballs/{self.ENV_NAME}.tar.gz"
-                )
-
-            if not tarball_env.exists():
-                tarball_env.parent.touch()
-                tarball_env.copy_from_local(
-                    src=os.path.abspath(f"tarballs/conda_envs/{self.ENV_NAME}.tar.gz")
-                )
         config.render_variables["USER"] = self.local_user
         config.render_variables["ANA_NAME"] = os.getenv("ANA_NAME")
         config.render_variables["ENV_NAME"] = self.ENV_NAME
         config.render_variables["TAG"] = self.production_tag
-        config.render_variables["USE_CVMFS"] = env_dict[self.ENV_NAME]
         config.render_variables["NTHREADS"] = self.htcondor_request_cpus
         config.render_variables["LUIGIPORT"] = os.getenv("LUIGIPORT")
+        config.render_variables["SOURCE_SCRIPT"] = self.remote_source_script
 
-        config.render_variables["OUTPUT_DESTINATION"] = self.output_destination
+        config.render_variables["IS_LOCAL_OUTPUT"] = self.is_local_output
         if not self.is_local_output:
             config.render_variables["TARBALL_PATH"] = (
                 os.path.expandvars(self.wlcg_path) + tarball.path
@@ -547,16 +526,6 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             config.render_variables["TARBALL_PATH"] = (
                 os.path.expandvars(self.local_output_path) + tarball.path
             )
-        # Include path to env tarball if env not in cvmfs
-        if env_dict[self.ENV_NAME] == "False":
-            if not self.is_local_output:
-                config.render_variables["TARBALL_ENV_PATH"] = (
-                    os.path.expandvars(self.wlcg_path) + tarball_env.path
-                )
-            else:
-                config.render_variables["TARBALL_ENV_PATH"] = (
-                    os.path.expandvars(self.local_output_path) + tarball_env.path
-                )
         config.render_variables["LOCAL_TIMESTAMP"] = startup_time
         config.render_variables["LOCAL_PWD"] = startup_dir
         # only needed for $ANA_NAME=ML_train see setup.sh line 158

@@ -79,81 +79,57 @@ action() {
     fi
 
     # First listed is env of DEFAULT and will be used as the starting env
+    # Remaining envs should be sourced via provided docker images
     export STARTING_ENV=$(echo ${PARSED_ENVS} | head -n1 | awk '{print $1;}')
-    echo "The following envs will be set up: ${PARSED_ENVS}"
+    # echo "The following envs will be set up: ${PARSED_ENVS}"
     echo "${STARTING_ENV} will be sourced as the starting env."
-    export ENV_NAMES_LIST=""
-    for ENV_NAME in ${PARSED_ENVS}; do
-        # Check if necessary environment is present in cvmfs
-        # Try to install and export env via miniconda if not
-        # NOTE: HTCondor jobs that rely on exported miniconda envs might need additional scratch space
-        if [[ -d "/cvmfs/etp.kit.edu/LAW_envs/conda_envs/miniconda/envs/${ENV_NAME}" ]]; then
-            echo "${ENV_NAME} environment found in cvmfs."
-            CVMFS_ENV_PRESENT="True"
-        else
-            echo "${ENV_NAME} environment not found in cvmfs. Using conda."
-            # Install conda if necessary
-            if [ ! -f "miniconda/bin/activate" ]; then
-                # Miniconda version used for all environments
-                MINICONDA_VERSION="Miniconda3-py39_23.5.2-0-Linux-x86_64"
-                echo "conda could not be found, installing conda ..."
-                echo "More information can be found in"
-                echo "https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html"
-                curl -O https://repo.anaconda.com/miniconda/${MINICONDA_VERSION}.sh
-                bash ${MINICONDA_VERSION}.sh -b -s -p miniconda
-                rm -f ${MINICONDA_VERSION}.sh
-            fi
-            # source base env of conda
-            source miniconda/bin/activate ''
+    # Check if necessary environment is present in cvmfs
+    # Try to install and export env via miniforge if not
+    # NOTE: HTCondor jobs that rely on exported miniforge envs might need additional scratch space
+    if [[ -d "/cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/envs/${STARTING_ENV}" ]]; then
+        echo "${STARTING_ENV} environment found in cvmfs."
+        CVMFS_ENV_PRESENT_START="True"
+    else
+        echo "${STARTING_ENV} environment not found in cvmfs. Using miniforge."
+        # Install miniforge if necessary
+        if [ ! -f "miniforge/bin/activate" ]; then
+            # Miniforge version used for all environments
+            MINICONDA_VERSION="Miniconda3-py39_23.5.2-0-Linux-x86_64"
+            MAMBAFORGE_INSTALLER="Mambaforge-${MAMBAFORGE_VERSION}-$(uname)-$(uname -m).sh"
+            echo "Miniforge could not be found, installing miniforge ..."
+            echo "More information can be found in"
+            echo "https://github.com/conda-forge/miniforge"
+            curl -L -O https://github.com/conda-forge/miniforge/releases/download/${MAMBAFORGE_VERSION}/${MAMBAFORGE_INSTALLER}
+            bash ${MAMBAFORGE_INSTALLER} -b -s -p miniforge
+            rm -f ${MAMBAFORGE_INSTALLER}
+        fi
+        # source base env of miniforge
+        source miniforge/bin/activate ''
 
-            # check if correct Conda env is running
-            if [ "${CONDA_DEFAULT_ENV}" != "${ENV_NAME}" ]; then
-                if [ -d "miniconda/envs/${ENV_NAME}" ]; then
-                    echo  "${ENV_NAME} env found using conda."
-                else
-                    # Create conda env from yaml file if necessary
-                    echo "Creating ${ENV_NAME} env from conda_environments/${ENV_NAME}_env.yml..."
-                    if [[ ! -f "conda_environments/${ENV_NAME}_env.yml" ]]; then
-                        echo "conda_environments/${ENV_NAME}_env.yml not found. Unable to create environment."
-                        return 1
-                    fi
-                    conda env create -f conda_environments/${ENV_NAME}_env.yml -n ${ENV_NAME}
-                    echo  "${ENV_NAME} env built using conda."
-                fi
-            fi
-
-            # create conda tarball if env not in cvmfs and it if it doesn't already exist
-            if [ ! -f "tarballs/conda_envs/${ENV_NAME}.tar.gz" ]; then
-                # IMPORTANT: environments have to be named differently with each change
-                #            as chaching prevents a clean overwrite of existing files
-                echo "Creating ${ENV_NAME}.tar.gz"
-                mkdir -p "tarballs/conda_envs"
-                conda activate ${ENV_NAME}
-                conda pack -n ${ENV_NAME} --output tarballs/conda_envs/${ENV_NAME}.tar.gz
-                if [[ "$?" -eq "1" ]]; then
-                    echo "Conda pack failed. Does the env contain conda-pack?"
+        # check if correct miniforge env is running
+        if [ "${CONDA_DEFAULT_ENV}" != "${STARTING_ENV}" ]; then
+            if [ -d "miniforge/envs/${STARTING_ENV}" ]; then
+                echo  "${STARTING_ENV} env found using conda."
+            else
+                # Create miniforge env from yaml file if necessary
+                echo "Creating ${STARTING_ENV} env from conda_environments/${STARTING_ENV}_env.yml..."
+                if [[ ! -f "conda_environments/${STARTING_ENV}_env.yml" ]]; then
+                    echo "conda_environments/${STARTING_ENV}_env.yml not found. Unable to create environment."
                     return 1
                 fi
-                conda deactivate
+                conda env create -f conda_environments/${STARTING_ENV}_env.yml -n ${STARTING_ENV}
+                echo  "${STARTING_ENV} env built using miniforge."
             fi
-            CVMFS_ENV_PRESENT="False"
         fi
-
-        # Remember status of starting-env
-        if [[ "${ENV_NAME}" == "${STARTING_ENV}" ]]; then
-            CVMFS_ENV_PRESENT_START=${CVMFS_ENV_PRESENT}
-        fi
-        # Create list of envs and their status to be later parsed by python
-        #   Example: 'env1;True,env2;False,env3;False'
-        # ENV_NAMES_LIST is used by the processor/framework.py to determine whether the environments are present in cvmfs
-        ENV_NAMES_LIST+="${ENV_NAME},${CVMFS_ENV_PRESENT};"
-    done
+        CVMFS_ENV_PRESENT_START="False"
+    fi
+    
     # Actvate starting-env
     if [[ "${CVMFS_ENV_PRESENT_START}" == "True" ]]; then
         echo "Activating starting-env ${STARTING_ENV} from cvmfs."
-        source /cvmfs/etp.kit.edu/LAW_envs/conda_envs/miniconda/bin/activate ${STARTING_ENV}
+        source /cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/bin/activate ${STARTING_ENV}
     else
-        echo "Activating starting-env ${STARTING_ENV} from conda."
+        echo "Activating starting-env ${STARTING_ENV} from miniforge."
         conda activate ${STARTING_ENV}
     fi
 
