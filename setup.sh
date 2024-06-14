@@ -1,5 +1,5 @@
 ############################################################################################
-# This script setups all dependencies necessary for making law executable                  #
+#         This script sets up all dependencies necessary for running KingMaker             #
 ############################################################################################
 
 
@@ -215,34 +215,7 @@ action() {
         fi
     fi
 
-    # Set an alias for the sample manager
-    source scripts/os-version.sh
-    if [[ "$distro" == "CentOS" ]]; then
-        if [[ ${os_version:0:1} == "7" ]]; then
-            lcg_path="/cvmfs/sft.cern.ch/lcg/views/LCG_105/x86_64-centos7-gcc11-opt/setup.sh"
-        else
-            lcg_path="Samplemanager not support on ${distro} ${os_version}"
-        fi
-    elif [[ "$distro" == "RedHatEnterprise" || "$distro" == "Alma" || "$distro" == "Rocky" ]]; then
-        if [[ ${os_version:0:1} == "8" ]]; then
-            lcg_path="Samplemanager not support on ${distro} ${os_version}"
-        elif [[ ${os_version:0:1} == "9" ]]; then
-            lcg_path="/cvmfs/sft.cern.ch/lcg/views/LCG_105/x86_64-el9-gcc11-opt/setup.sh"
-        else
-            lcg_path="Samplemanager not support on ${distro} ${os_version}"
-        fi
-    elif [[ "$distro" == "Ubuntu" ]]; then
-        if [[ ${os_version:0:2} == "20" ]]; then
-            lcg_path="/cvmfs/sft.cern.ch/lcg/views/LCG_104/x86_64-ubuntu2004-gcc9-opt/setup.sh"
-        elif [[ ${os_version:0:2} == "22" ]]; then
-            lcg_path="/cvmfs/sft.cern.ch/lcg/views/LCG_105/x86_64-ubuntu2204-gcc11-opt/setup.sh"
-        else
-            lcg_path="Samplemanager not support on ${distro} ${os_version}"
-        fi
-    else
-        lcg_path="Samplemanager not support on ${distro} ${os_version}"
-    fi
-    # Now set the alias
+    # Set the alias
     function sample_manager () {
         # Determine the directory of this file
         if [ ! -z "${ZSH_VERSION}" ]; then
@@ -252,16 +225,10 @@ action() {
         fi
 
         local BASE_DIR="$( cd "$( dirname "${THIS_FILE}" )" && pwd )"
-        if [[ "$lcg_path" == "Samplemanager not support on ${distro} ${os_version}" ]]; then
-            echo ${lcg_path}
-        else
-            (
-                echo "Setting up LCG for Samplemanager"
-                source ${lcg_path}
-                echo "Starting Samplemanager"
-                python3 ${BASE_DIR}/sample_database/samplemanager/main.py --database-folder ${BASE_DIR}/sample_database
-            )
-        fi
+        (
+            echo "Starting Samplemanager"
+            python3 ${BASE_DIR}/sample_database/samplemanager/main.py --database-folder ${BASE_DIR}/sample_database
+        )
     }
 
     function monitor_production () {
