@@ -85,7 +85,8 @@ action() {
     echo "${STARTING_ENV} will be sourced as the starting env."
     # Check if necessary environment is present in cvmfs
     # Try to install and export env via miniforge if not
-    # NOTE: HTCondor jobs that rely on exported miniforge envs might need additional scratch space
+    # NOTE: miniforge is based on conda and uses the same syntax. Switched due to licensing concerns.
+    # NOTE2: HTCondor jobs that rely on exported miniforge envs might need additional scratch space
     if [[ -d "/cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/envs/${STARTING_ENV}" ]]; then
         echo "${STARTING_ENV} environment found in cvmfs."
         CVMFS_ENV_PRESENT_START="True"
@@ -123,7 +124,7 @@ action() {
         fi
         CVMFS_ENV_PRESENT_START="False"
     fi
-    
+
     # Actvate starting-env
     if [[ "${CVMFS_ENV_PRESENT_START}" == "True" ]]; then
         echo "Activating starting-env ${STARTING_ENV} from cvmfs."

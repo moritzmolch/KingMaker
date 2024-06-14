@@ -28,6 +28,7 @@ action() {
     echo " | XRD_PARALLELEVTLOOP = ${XRD_PARALLELEVTLOOP}"
     echo "------------------------------------------"
 
+    echo "Setting up environment via {{SOURCE_SCRIPT}}."
     {{SOURCE_SCRIPT}}
 
     if [ "{{IS_LOCAL_OUTPUT}}" = "True" ]
