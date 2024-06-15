@@ -109,7 +109,7 @@ action() {
 
         # Check if correct miniforge env is running
         if [ -d "miniforge/envs/${STARTING_ENV}" ]; then
-            echo  "${STARTING_ENV} env found using conda."
+            echo  "${STARTING_ENV} env found using miniforge."
         else
             # Create miniforge env from yaml file if necessary
             echo "Creating ${STARTING_ENV} env from conda_environments/${STARTING_ENV}_env.yml..."
