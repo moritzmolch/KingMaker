@@ -477,7 +477,6 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             #   The processor directory, thhe relevant config files, law
             #   and any other files specified in the additional_files parameter
             command = [
-                "cd $ANALYSIS_PATH;",
                 "tar",
                 "--exclude",
                 "*.pyc",
@@ -517,7 +516,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         config.render_variables["LUIGIPORT"] = os.getenv("LUIGIPORT")
         config.render_variables["SOURCE_SCRIPT"] = self.remote_source_script
 
-        config.render_variables["IS_LOCAL_OUTPUT"] = self.is_local_output
+        config.render_variables["IS_LOCAL_OUTPUT"] = str(self.is_local_output)
         if not self.is_local_output:
             config.render_variables["TARBALL_PATH"] = (
                 os.path.expandvars(self.wlcg_path) + tarball.path
