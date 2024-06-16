@@ -62,16 +62,9 @@ class CreateTrainingDataShard(MLBase):
         config = super(CreateTrainingDataShard, self).htcondor_job_config(
             config, job_num, branches
         )
-        name_list = [
-            "_".join(info + (fold,))
-            for info in self.datashard_information
-            for fold in ["0", "1"]
-        ]
         task_name = self.__class__.__name__
-        branch_names = []
-        for branch in branches:
-            branch_names.append(name_list[branch])
-        branch_str = "|".join(branch_names)
+        flattened_branches = sum(branches, []) # Quick and dirty way to flatten a nested list
+        branch_str = f"{min(flattened_branches)}to{max(flattened_branches)}"
         config.custom_content.append(("JobBatchName", f"{task_name}-{branch_str}"))
         return config
 
