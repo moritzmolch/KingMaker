@@ -304,7 +304,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
     htcondor_user_proxy = law.wlcg.get_vomsproxy_file()
 
     def get_submission_os(self):
-        # function to check, if running on centos7, centos8 or rhel9
+        # function to check, if running on centos7, rhel9 or Ubuntu22
+        # Other OS are not permitted
         # based on this, the correct docker image is chosen, overwriting the htcondor_docker_image parameter
         # check if lsb_release is installed, if not, use the information from /etc/os-release
         try:
@@ -341,18 +342,14 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             if os_version[0] == "7":
                 image_name = "centos7"
         elif distro == "RedHatEnterprise" or distro == "AlmaLinux":
-            if os_version[0] == "8":
-                image_name = "centos8"
-            elif os_version[0] == "9":
+            if os_version[0] == "9":
                 image_name = "rhel9"
         elif distro == "Ubuntu":
-            if os_version[0:2] == "20":
-                image_name = "ubuntu2004"
-            elif os_version[0:2] == "22":
+            if os_version[0:2] == "22":
                 image_name = "ubuntu2204"
         else:
             raise Exception(
-                f"Unknown OS {distro} {os_version}, CROWN will not run without changes"
+                f"Unknown OS {distro} {os_version}, KingMaker will not run without changes"
             )
         image = f"ghcr.io/kit-cms/kingmaker-images-{image_name}-{str(self.ENV_NAME).lower()}:update_env_PR"
         # print(f"Running on {distro} {os_version}, using image {image}")

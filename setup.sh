@@ -77,6 +77,11 @@ action() {
         return 1
     fi
 
+    # Ensure that submodule with KingMaker env files is present
+    if [ -z "$(ls -A kingmaker-images)" ]; then
+        git submodule update --init --recursive -- kingmaker-images
+    fi
+
     # First listed is env of DEFAULT and will be used as the starting env
     # Remaining envs should be sourced via provided docker images
     export STARTING_ENV=$(echo ${PARSED_ENVS} | head -n1 | awk '{print $1;}')
@@ -112,12 +117,12 @@ action() {
             echo  "${STARTING_ENV} env found using miniforge."
         else
             # Create miniforge env from yaml file if necessary
-            echo "Creating ${STARTING_ENV} env from conda_environments/${STARTING_ENV}_env.yml..."
-            if [[ ! -f "conda_environments/${STARTING_ENV}_env.yml" ]]; then
-                echo "conda_environments/${STARTING_ENV}_env.yml not found. Unable to create environment."
+            echo "Creating ${STARTING_ENV} env from kingmaker-images/KingMaker_envs/${STARTING_ENV}_env.yml..."
+            if [[ ! -f "kingmaker-images/KingMaker_envs/${STARTING_ENV}_env.yml" ]]; then
+                echo "kingmaker-images/KingMaker_envs/${STARTING_ENV}_env.yml not found. Unable to create environment."
                 return 1
             fi
-            conda env create -f conda_environments/${STARTING_ENV}_env.yml -n ${STARTING_ENV}
+            conda env create -f kingmaker-images/KingMaker_envs/${STARTING_ENV}_env.yml -n ${STARTING_ENV}
             echo  "${STARTING_ENV} env built using miniforge."
         fi
         echo "Activating starting-env ${STARTING_ENV} from miniforge."
