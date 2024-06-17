@@ -112,10 +112,10 @@ action() {
     # Try to install and export env via miniforge if not
     # NOTE: miniforge is based on conda and uses the same syntax. Switched due to licensing concerns.
     # NOTE2: HTCondor jobs that rely on exported miniforge envs might need additional scratch space
-    if [[ -d "/cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/envs/${STARTING_ENV}" ]]; then
+    if [[ -d "/cvmfs/etp.kit.edu/LAW_envs/forge_envs_new/miniforge/envs/${STARTING_ENV}" ]]; then
         echo "${STARTING_ENV} environment found in cvmfs."
         echo "Activating starting-env ${STARTING_ENV} from cvmfs."
-        source /cvmfs/etp.kit.edu/LAW_envs/forge_envs/miniforge/bin/activate ${STARTING_ENV}
+        source /cvmfs/etp.kit.edu/LAW_envs/forge_envs_new/miniforge/bin/activate ${STARTING_ENV}
     else
         echo "${STARTING_ENV} environment not found in cvmfs. Using miniforge."
         # Install miniforge if necessary
