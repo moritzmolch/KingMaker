@@ -43,16 +43,16 @@ action() {
             VALID_OS="True"
         fi
     elif [[ "$distro" == "RedHatEnterprise" || "$distro" == "Alma" || "$distro" == "Rocky" ]]; then
-        elif [[ ${os_version:0:1} == "9" ]]; then
+        if [[ ${os_version:0:1} == "9" ]]; then
             VALID_OS="True"
         fi
     elif [[ "$distro" == "Ubuntu" ]]; then
-        elif [[ ${os_version:0:2} == "22" ]]; then
+        if [[ ${os_version:0:2} == "22" ]]; then
             VALID_OS="True"
         fi
     fi
     if [[ "${VALID_OS}" == "False" ]]; then
-        echo "Samplemanager not support on ${distro} ${os_version}"
+        echo "Kingmaker not support on ${distro} ${os_version}"
         return 1
     else
         echo "Running Kingmaker on $distro Version $os_version on $(hostname) from dir ${BASE_DIR}"
