@@ -35,7 +35,28 @@ action() {
 
     local BASE_DIR="$( cd "$( dirname "${THIS_FILE}" )" && pwd )"
 
-    echo  "$(bash scripts/os-version.sh) on $(hostname) from dir ${BASE_DIR}"
+    # Check if current OS is supported
+    source scripts/os-version.sh
+    local VALID_OS="False"
+    if [[ "$distro" == "CentOS" ]]; then
+        if [[ ${os_version:0:1} == "7" ]]; then
+            VALID_OS="True"
+        fi
+    elif [[ "$distro" == "RedHatEnterprise" || "$distro" == "Alma" || "$distro" == "Rocky" ]]; then
+        elif [[ ${os_version:0:1} == "9" ]]; then
+            VALID_OS="True"
+        fi
+    elif [[ "$distro" == "Ubuntu" ]]; then
+        elif [[ ${os_version:0:2} == "22" ]]; then
+            VALID_OS="True"
+        fi
+    fi
+    if [[ "${VALID_OS}" == "False" ]]; then
+        echo "Samplemanager not support on ${distro} ${os_version}"
+        return 1
+    else
+        echo "Running Kingmaker on $distro Version $os_version on $(hostname) from dir ${BASE_DIR}"
+    fi
 
     # Workflow to be set up
     ANA_NAME_GIVEN=$1
