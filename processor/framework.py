@@ -308,10 +308,12 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         # Other OS are not permitted
         # based on this, the correct docker image is chosen, overwriting the htcondor_docker_image parameter
         # check if lsb_release is installed, if not, use the information from /etc/os-release
+        # Please note that this selection can be somewhat unstable. Modify if neccessary.
         try:
             distro = (
                 subprocess.check_output("lsb_release -i | cut -f2", stderr=subprocess.STDOUT)
                 .decode()
+                .replace(' Linux', '').replace(' linux', '')
                 .strip()
             )
             os_version = (
@@ -325,6 +327,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                     "cat /etc/os-release | grep '^NAME=' | cut -f2 -d='' | tr -d '\"'", shell=True
                 )
                 .decode()
+                .replace(' Linux', '').replace(' linux', '')
                 .strip()
             )
             os_version = (
