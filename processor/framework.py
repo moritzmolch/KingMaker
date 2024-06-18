@@ -310,26 +310,26 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         # check if lsb_release is installed, if not, use the information from /etc/os-release
         try:
             distro = (
-                subprocess.check_output("lsb_release -i | cut -f2", shell=True)
+                subprocess.check_output("lsb_release -i | cut -f2", stderr=subprocess.STDOUT)
                 .decode()
                 .strip()
             )
             os_version = (
-                subprocess.check_output("lsb_release -r | cut -f2", shell=True)
+                subprocess.check_output("lsb_release -r | cut -f2", stderr=subprocess.STDOUT)
                 .decode()
                 .strip()
             )
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
             distro = (
                 subprocess.check_output(
-                    "cat /etc/os-release | grep '^NAME=' | cut -f2 -d=''", shell=True
+                    "cat /etc/os-release | grep '^NAME=' | cut -f2 -d='' | tr -d '\"'", shell=True
                 )
                 .decode()
                 .strip()
             )
             os_version = (
                 subprocess.check_output(
-                    "cat /etc/os-release | grep '^VERSION_ID=' | cut -f2 -d=''",
+                    "cat /etc/os-release | grep '^VERSION_ID=' | cut -f2 -d='' | tr -d '\"'",
                     shell=True,
                 )
                 .decode()
