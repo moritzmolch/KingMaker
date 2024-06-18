@@ -313,7 +313,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             distro = (
                 subprocess.check_output("lsb_release -i | cut -f2", stderr=subprocess.STDOUT)
                 .decode()
-                .replace(' Linux', '').replace(' linux', '')
+                .replace('Linux', '').replace('linux', '')
                 .strip()
             )
             os_version = (
@@ -327,7 +327,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                     "cat /etc/os-release | grep '^NAME=' | cut -f2 -d='' | tr -d '\"'", shell=True
                 )
                 .decode()
-                .replace(' Linux', '').replace(' linux', '')
+                .replace('Linux', '').replace('linux', '')
                 .strip()
             )
             os_version = (
@@ -344,7 +344,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         if distro == "CentOS":
             if os_version[0] == "7":
                 image_name = "centos7"
-        elif distro == "RedHatEnterprise" or distro == "AlmaLinux":
+        elif distro == "RedHatEnterprise" or distro == "Alma":
             if os_version[0] == "9":
                 image_name = "rhel9"
         elif distro == "Ubuntu":
