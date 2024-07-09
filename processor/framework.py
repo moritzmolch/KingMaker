@@ -46,10 +46,12 @@ class Task(law.Task):
     local_user = getuser()
     wlcg_path = luigi.Parameter(description="Base-path to remote file location.")
     local_output_path = luigi.Parameter(
-        description="Base-path to local file location.", 
-        default=os.getenv("ANALYSIS_DATA_PATH")
+        description="Base-path to local file location.",
+        default=os.getenv("ANALYSIS_DATA_PATH"),
     )
-    is_local_output = luigi.BoolParameter(description="Whether to use local storage. False by default.")
+    is_local_output = luigi.BoolParameter(
+        description="Whether to use local storage. False by default."
+    )
 
     # Behaviour of production_tag:
     # If a tag is give it will be used for the respective task.
@@ -61,8 +63,8 @@ class Task(law.Task):
     )
     output_collection_cls = law.NestedSiblingFileCollection
 
-    # Path of local targets. 
-    #   Composed from the analysis path set during the setup.sh 
+    # Path of local targets.
+    #   Composed from the analysis path set during the setup.sh
     #   or the local_output_path if is_local_output is set,
     #   the production_tag, the name of the task and an additional path if provided.
     def local_path(self, *path):
@@ -269,7 +271,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
     )
     htcondor_request_cpus = luigi.Parameter(
         description="Number of CPU cores to be requested in HTCondor job submission.",
-        default="1"
+        default="1",
     )
     htcondor_request_gpus = luigi.Parameter(
         default="0",
@@ -297,7 +299,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
     )
     remote_source_script = luigi.Parameter(
         description="Script to source environment in remote jobs. Leave empty if not needed. Defaults to use with docker images",
-        default="source /opt/conda/bin/activate env"
+        default="source /opt/conda/bin/activate env",
     )
 
     # Use proxy file located in $X509_USER_PROXY or /tmp/x509up_u$(id) if empty
@@ -311,23 +313,30 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         # Please note that this selection can be somewhat unstable. Modify if neccessary.
         try:
             distro = (
-                subprocess.check_output("lsb_release -i | cut -f2", stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    "lsb_release -i | cut -f2", stderr=subprocess.STDOUT
+                )
                 .decode()
-                .replace('Linux', '').replace('linux', '')
+                .replace("Linux", "")
+                .replace("linux", "")
                 .strip()
             )
             os_version = (
-                subprocess.check_output("lsb_release -r | cut -f2", stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    "lsb_release -r | cut -f2", stderr=subprocess.STDOUT
+                )
                 .decode()
                 .strip()
             )
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             distro = (
                 subprocess.check_output(
-                    "cat /etc/os-release | grep '^NAME=' | cut -f2 -d='' | tr -d '\"'", shell=True
+                    "cat /etc/os-release | grep '^NAME=' | cut -f2 -d='' | tr -d '\"'",
+                    shell=True,
                 )
                 .decode()
-                .replace('Linux', '').replace('linux', '')
+                .replace("Linux", "")
+                .replace("linux", "")
                 .strip()
             )
             os_version = (

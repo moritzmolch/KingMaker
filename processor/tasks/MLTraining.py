@@ -63,7 +63,9 @@ class CreateTrainingDataShard(MLBase):
             config, job_num, branches
         )
         task_name = self.__class__.__name__
-        flattened_branches = sum(branches, []) # Quick and dirty way to flatten a nested list
+        flattened_branches = sum(
+            branches, []
+        )  # Quick and dirty way to flatten a nested list
         branch_str = f"{min(flattened_branches)}to{max(flattened_branches)}"
         config.custom_content.append(("JobBatchName", f"{task_name}-{branch_str}"))
         return config
@@ -171,7 +173,9 @@ class RunTraining(MLBase):
     def htcondor_job_config(self, config, job_num, branches):
         config = super(RunTraining, self).htcondor_job_config(config, job_num, branches)
         task_name = self.__class__.__name__
-        flattened_branches = sum(branches, []) # Quick and dirty way to flatten a nested list
+        flattened_branches = sum(
+            branches, []
+        )  # Quick and dirty way to flatten a nested list
         branch_str = f"{min(flattened_branches)}to{max(flattened_branches)}"
         config.custom_content.append(("JobBatchName", f"{task_name}-{branch_str}"))
         return config
@@ -405,7 +409,9 @@ class RunTesting(MLBase):
     def htcondor_job_config(self, config, job_num, branches):
         config = super(RunTesting, self).htcondor_job_config(config, job_num, branches)
         task_name = self.__class__.__name__
-        flattened_branches = sum(branches, []) # Quick and dirty way to flatten a nested list
+        flattened_branches = sum(
+            branches, []
+        )  # Quick and dirty way to flatten a nested list
         branch_str = f"{min(flattened_branches)}to{max(flattened_branches)}"
         config.custom_content.append(("JobBatchName", f"{task_name}-{branch_str}"))
         return config
