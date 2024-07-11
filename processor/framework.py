@@ -328,7 +328,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
                 .decode()
                 .strip()
             )
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             distro = (
                 subprocess.check_output(
                     "cat /etc/os-release | grep '^NAME=' | cut -f2 -d='' | tr -d '\"'",
@@ -353,7 +353,7 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
         if distro == "CentOS":
             if os_version[0] == "7":
                 image_name = "centos7"
-        elif distro == "RedHatEnterprise" or distro == "Alma":
+        elif distro in ("RedHatEnterprise", "Alma"):
             if os_version[0] == "9":
                 image_name = "rhel9"
         elif distro == "Ubuntu":
