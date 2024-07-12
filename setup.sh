@@ -102,6 +102,8 @@ action() {
     if [ -z "$(ls -A kingmaker-images)" ]; then
         git submodule update --init --recursive -- kingmaker-images
     fi
+    # Get kingmaker-images submodule hash to find the correct image during job submission
+    export IMAGE_HASH=$(cd kingmaker-images/; git rev-parse --short HEAD)
 
     # First listed is env of DEFAULT and will be used as the starting env
     # Remaining envs should be sourced via provided docker images

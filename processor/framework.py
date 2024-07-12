@@ -366,7 +366,8 @@ class HTCondorWorkflow(Task, law.htcondor.HTCondorWorkflow):
             raise Exception(
                 f"Unknown OS {distro} {os_version}, KingMaker will not run without changes"
             )
-        image = f"ghcr.io/kit-cms/kingmaker-images-{image_name}-{str(self.ENV_NAME).lower()}:main"
+        image_hash = os.getenv("IMAGE_HASH")
+        image = f"ghcr.io/kit-cms/kingmaker-images-{image_name}-{str(self.ENV_NAME).lower()}:main_{image_hash}"
         # print(f"Running on {distro} {os_version}, using image {image}")
         return image
 
