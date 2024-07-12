@@ -3,17 +3,21 @@ import luigi
 import law
 import select
 import subprocess
-import warnings
-from law.util import interruptable_popen, readable_popen
+from law.util import interruptable_popen
 from rich.console import Console
-from law.util import merge_dicts, DotDict
+from law.util import merge_dicts
 from datetime import datetime
 from law.contrib.htcondor.job import HTCondorJobManager
 from tempfile import mkdtemp
 from getpass import getuser
-from law.target.collection import flatten_collections
 from law.config import Config
-from luigi.parameter import UnconsumedParameterWarning
+try:
+    from luigi.parameter import UnconsumedParameterWarning
+    import warnings
+    # Ignore warnings about unused parameters that are set in the default config but not used by all tasks
+    warnings.simplefilter("ignore", UnconsumedParameterWarning)
+except:
+    pass
 
 law.contrib.load("wlcg")
 law.contrib.load("htcondor")
@@ -23,9 +27,6 @@ try:
 except OSError:
     current_width = 140
 console = Console(width=current_width)
-
-# Ignore warnings about unused parameters that are set in the default config but not used by all tasks
-warnings.simplefilter("ignore", UnconsumedParameterWarning)
 
 # Determine startup time to use as default production_tag
 # LOCAL_TIMESTAMP is used by remote workflows to ensure consistent tags
