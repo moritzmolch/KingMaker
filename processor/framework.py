@@ -11,9 +11,11 @@ from law.contrib.htcondor.job import HTCondorJobManager
 from tempfile import mkdtemp
 from getpass import getuser
 from law.config import Config
+
 try:
     from luigi.parameter import UnconsumedParameterWarning
     import warnings
+
     # Ignore warnings about unused parameters that are set in the default config but not used by all tasks
     warnings.simplefilter("ignore", UnconsumedParameterWarning)
 except:
