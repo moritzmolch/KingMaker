@@ -14,11 +14,14 @@ EXECUTALBE_THREADS=${11}
 set -o pipefail
 set -e
 source $ANALYSIS_PATH/CROWN/init.sh $ANALYSIS
-# remove conda /cvmfs/etp.kit.edu from $PATH so cmakes uses the LCG stack python and not the conda one
-PATH=$(echo $PATH | sed 's%/cvmfs/etp.kit.edu/[^:]*:%%g')
-CONDA_PYTHON_EXE=""
-CONDA_EXE=""
-CONDA_PREFIX=""
+# remove conda prefix from $PATH so cmakes uses the LCG stack python and not the conda one
+if [[ ! -z "${CONDA_PREFIX}" ]]; then
+	PATH=$(echo $PATH | sed "s@$CONDA_PREFIX@@g")
+	# PATH=$(echo $PATH | sed 's%/cvmfs/etp.kit.edu/[^:]*:%%g')
+	CONDA_PYTHON_EXE=""
+	CONDA_EXE=""
+	CONDA_PREFIX=""
+fi
 # use a fourth of the machine for compiling
 THREADS_AVAILABLE=$(grep -c ^processor /proc/cpuinfo)
 THREADS=$(( THREADS_AVAILABLE / 4 ))

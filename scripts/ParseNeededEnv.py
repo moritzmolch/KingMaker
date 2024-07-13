@@ -1,6 +1,7 @@
 import configparser
 from sys import argv
 import os
+import sys
 
 config = configparser.ConfigParser()
 
@@ -12,35 +13,31 @@ except IndexError:
         "Please provided a luigi config file to search for the necessary environments."
     )
     print("Example: 'python ParseNeededEnv.py <config_file>'")
-    exit(1)
+    sys.exit(1)
 
 # Check if file exists at that location
 if not os.path.isfile(cfg_path):
-    print("There was no file found at {}".format(cfg_path))
-    exit(1)
+    print(f"There was no file found at {cfg_path}")
+    sys.exit(1)
 
 # Try to parse config file
 try:
     config.read(cfg_path)
 except (configparser.ParsingError, configparser.MissingSectionHeaderError) as error:
     print(
-        "{}@File at {} could not be parsed. Is it a valid luigi config file?".format(
-            error, cfg_path
-        )
+        f"{error}@File at {cfg_path} could not be parsed. Is it a valid luigi config file?"
     )
-    exit(1)
+    sys.exit(1)
 
 # Try to get starting env from 'ENV_NAME' of 'DEFAULT' section
 try:
     base_env = config["DEFAULT"]["ENV_NAME"].strip()
 except KeyError as error:
     print(
-        "Config file at {} does not provide an 'ENV_NAME' in it's 'DEFAULT' section.".format(
-            cfg_path
-        ),
+        f"Config file at {cfg_path} does not provide an 'ENV_NAME' in it's 'DEFAULT' section.",
         "Without this, the starting env cannot be set.",
     )
-    exit(1)
+    sys.exit(1)
 
 all_envs = [base_env]
 # Add all other envs mentioned in the 'ENV_NAME' of the sections to the list
