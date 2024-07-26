@@ -265,5 +265,11 @@ action() {
     }
 
     export LAW_IS_SET_UP="True"
+
+    # set custom value for rucio account
+    if [[ "${USER}" == "mmolch" ]]; then
+        export RUCIO_ACCOUNT="momolch"
+    fi
+
 }
 action "$@"
